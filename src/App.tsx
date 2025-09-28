@@ -2,6 +2,7 @@ import React from 'react'
 import { Unit } from './types'
 import { Splits } from './Splits'
 import { UnitToggle } from './UnitToggle'
+import { PresetOptions } from './PresetOptions'
 import { parsePaceToSeconds, formatHMS, convertDistanceTo } from './utils'
 
 export default function App() {
@@ -150,6 +151,22 @@ export default function App() {
   const distanceError =
     distanceStr.trim().length > 0 && !Number.isFinite(distanceVal)
 
+  // Preset handlers
+  const handlePacePreset = (paceSeconds: number, corral: string) => {
+    // The pace is already converted to the user's preferred unit, just format it as mm:ss
+    const minutes = Math.floor(paceSeconds / 60)
+    const seconds = Math.round(paceSeconds % 60)
+    const paceString = `${minutes}:${seconds.toString().padStart(2, '0')}`
+
+    setPaceStr(paceString)
+    setCalcMode('time') // Switch to time calculation mode
+  }
+
+  const handleDistancePreset = (distance: number, unit: Unit) => {
+    setDistanceStr(distance.toString())
+    setDistanceUnit(unit)
+  }
+
   return (
     <div
       style={{
@@ -287,6 +304,16 @@ export default function App() {
           </div>
         </div>
 
+        {/* Preset Options Section */}
+        <PresetOptions
+          onPacePreset={handlePacePreset}
+          onDistancePreset={handleDistancePreset}
+          currentDistance={Number.isFinite(distanceVal) ? distanceVal : NaN}
+          currentDistanceUnit={distanceUnit}
+          paceUnit={paceUnit}
+          currentPaceSeconds={paceSec}
+        />
+
         {/* Result */}
         <div
           style={styles.resultCard}
@@ -385,7 +412,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   h1: {
     fontSize: '1.6rem',
-    margin: '0 0 16px',
+    margin: '16px 0 16px',
     color: 'var(--text-primary)',
   },
   row: {
