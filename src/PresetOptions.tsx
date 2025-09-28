@@ -1,45 +1,120 @@
 import React from 'react'
 import { Unit } from './types'
+import {
+  RACE_PROFILES,
+  RaceProfile,
+  generateElevationSparkline,
+} from './elevation'
+import { parseUrlParams } from './hashRouter'
 
 interface PresetOptionsProps {
   onPacePreset: (paceSeconds: number, corral: string) => void
   onDistancePreset: (distance: number, unit: Unit) => void
+  onRacePreset: (raceProfile: RaceProfile) => void
+  onClearRace: () => void // Add handler to clear race
   currentDistance: number
   currentDistanceUnit: Unit
   paceUnit: Unit
-  currentPaceSeconds: number | null // Add current pace for comparison
+  currentPaceSeconds: number | null
+  raceProfile: RaceProfile | null
+  pacingStrategy: 'even-pace' | 'even-effort'
+  onPacingStrategyChange: (strategy: 'even-pace' | 'even-effort') => void
 }
 
 export function PresetOptions({
   onPacePreset,
   onDistancePreset,
+  onRacePreset,
+  onClearRace,
   currentDistance,
   currentDistanceUnit,
   paceUnit,
   currentPaceSeconds,
+  raceProfile,
+  pacingStrategy,
+  onPacingStrategyChange,
 }: PresetOptionsProps) {
   const [isOpen, setIsOpen] = React.useState(false)
 
-  // Get the current distance in a standardized format for lookup
-  const getCurrentDistanceKey = () => {
-    if (!Number.isFinite(currentDistance)) return null
+  // Parse current URL params for highlighting
+  const urlState = parseUrlParams(window.location.search.slice(1))
 
-    // Convert to miles for consistent lookup
+  // Force re-render when URL changes by listening to popstate
+  const [, forceUpdate] = React.useReducer((x) => x + 1, 0)
+
+  React.useEffect(() => {
+    const handlePopState = () => forceUpdate()
+    window.addEventListener('popstate', handlePopState)
+
+    // Also listen for manual URL updates (from our updateUrlState calls)
+    const handleUrlChange = () => forceUpdate()
+    const originalReplaceState = window.history.replaceState
+    window.history.replaceState = function (...args) {
+      originalReplaceState.apply(this, args)
+      handleUrlChange()
+    }
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+      window.history.replaceState = originalReplaceState
+    }
+  }, [])
+
+  // Handle distance preset click with race clearing
+  const handleDistancePreset = (distance: number, unit: Unit) => {
+    // Clear race if this distance doesn't match any race profile
+    const matchingRace = Object.values(RACE_PROFILES).find(
+      (race) => Math.abs(race.distance - distance) < 0.01 && race.unit === unit
+    )
+
+    if (!matchingRace && urlState.race) {
+      onClearRace()
+    }
+
+    onDistancePreset(distance, unit)
+  }
+
+  // Check if a race preset is selected - now reactive to urlState changes
+  const isRaceSelected = React.useMemo(
+    () => (raceKey: string) => {
+      return urlState.race === raceKey
+    },
+    [urlState.race]
+  )
+
+  // Check if a distance preset is selected - now reactive to urlState changes
+  const isDistanceSelected = React.useMemo(
+    () => (miles: number) => {
+      if (!urlState.distance || !urlState.distanceUnit) return false
+
+      const urlDistanceInMiles =
+        urlState.distanceUnit === 'mi'
+          ? urlState.distance
+          : urlState.distance / 1.609344
+
+      return Math.abs(urlDistanceInMiles - miles) < 0.01
+    },
+    [urlState.distance, urlState.distanceUnit]
+  )
+
+  // Get the current distance key for NYRR calculations - now reactive
+  const getCurrentDistanceKey = React.useMemo(() => {
+    if (!urlState.distance || !urlState.distanceUnit) return null
+
     const distanceInMiles =
-      currentDistanceUnit === 'mi'
-        ? currentDistance
-        : currentDistance / 1.609344
+      urlState.distanceUnit === 'mi'
+        ? urlState.distance
+        : urlState.distance / 1.609344
 
-    // Find matching NYRR distance (with tighter tolerance for precision)
     for (const [key, data] of Object.entries(NYRR_DISTANCE_FACTORS)) {
       if (Math.abs(distanceInMiles - data.miles) < 0.01) {
         return key
       }
     }
     return null
-  }
+  }, [urlState.distance, urlState.distanceUnit])
 
-  const distanceKey = getCurrentDistanceKey()
+  const distanceKey = getCurrentDistanceKey
   const isNYRRDistance = distanceKey !== null
   const currentDistanceData = distanceKey
     ? NYRR_DISTANCE_FACTORS[distanceKey]
@@ -49,18 +124,12 @@ export function PresetOptions({
   const calculatePaceForDistance = (pace10kSeconds: number) => {
     if (!currentDistanceData) return pace10kSeconds
 
-    // For 10K, no conversion needed
     if (currentDistanceData.factor === 1.0) {
       return pace10kSeconds
     }
 
-    // Convert 10K pace to 10K total time (10K = exactly 10km = 6.213712 miles)
     const total10kTime = pace10kSeconds * 6.213712
-
-    // Apply NYRR factor - this gives us the predicted race time for the new distance
     const predictedRaceTime = total10kTime / currentDistanceData.factor
-
-    // Convert back to per-mile pace for the current distance
     const paceForDistance = predictedRaceTime / currentDistanceData.miles
 
     return Math.floor(paceForDistance)
@@ -69,7 +138,6 @@ export function PresetOptions({
   // Convert mile pace to km pace if needed
   const formatPaceForDisplay = (paceInSeconds: number) => {
     if (paceUnit === 'km') {
-      // Convert per-mile pace to per-km pace
       const pacePerKm = paceInSeconds / 1.609344
       const minutes = Math.floor(pacePerKm / 60)
       const secs = Math.round(pacePerKm % 60)
@@ -83,27 +151,30 @@ export function PresetOptions({
   const handlePacePreset = (calculatedPaceSeconds: number, corral: string) => {
     let paceToSet = calculatedPaceSeconds
     if (paceUnit === 'km') {
-      // Convert from per-mile to per-km for the callback
       paceToSet = calculatedPaceSeconds / 1.609344
     }
     onPacePreset(Math.round(paceToSet), corral)
   }
 
-  // Check if a pace preset is currently selected
-  const isPaceSelected = (pace10kSeconds: number) => {
-    if (currentPaceSeconds === null) return false
+  // Check if a pace preset is selected - now reactive to urlState changes
+  const isPaceSelected = React.useMemo(
+    () => (pace10kSeconds: number) => {
+      if (!urlState.pace || !currentDistanceData) return false
 
-    const calculatedPace = calculatePaceForDistance(pace10kSeconds)
-    let paceToCompare = calculatedPace
+      const calculatedPace = calculatePaceForDistance(pace10kSeconds)
+      let expectedPaceInUrl = calculatedPace
 
-    if (paceUnit === 'km') {
-      // Convert from per-mile to per-km for comparison
-      paceToCompare = calculatedPace / 1.609344
-    }
+      if (urlState.paceUnit === 'km') {
+        expectedPaceInUrl = calculatedPace / 1.609344
+      }
 
-    // Allow for small rounding differences (within 1 second)
-    return Math.abs(currentPaceSeconds - paceToCompare) <= 3
-  }
+      const urlPaceSeconds = parsePaceStringToSeconds(urlState.pace)
+      if (urlPaceSeconds === null) return false
+
+      return Math.abs(urlPaceSeconds - expectedPaceInUrl) <= 3
+    },
+    [urlState.pace, urlState.paceUnit, currentDistanceData]
+  )
 
   return (
     <div style={styles.moreOptionsSection}>
@@ -121,21 +192,20 @@ export function PresetOptions({
           <div style={styles.presetSection}>
             <h3 style={styles.presetHeader}>Common-ish Distances</h3>
             <div style={styles.distancePresets}>
-              {Object.entries(NYRR_DISTANCE_FACTORS).map(([key, data]) => {
-                const isSelected = distanceKey === key
-                return (
-                  <button
-                    key={key}
-                    style={{
-                      ...styles.presetButton,
-                      ...(isSelected ? styles.presetButtonActive : {}),
-                    }}
-                    onClick={() => onDistancePreset(data.miles, 'mi')}
-                  >
-                    {data.label}
-                  </button>
-                )
-              })}
+              {Object.entries(NYRR_DISTANCE_FACTORS).map(([key, data]) => (
+                <button
+                  key={key}
+                  style={{
+                    ...styles.presetButton,
+                    ...(isDistanceSelected(data.miles)
+                      ? styles.presetButtonActive
+                      : {}),
+                  }}
+                  onClick={() => handleDistancePreset(data.miles, 'mi')}
+                >
+                  {data.label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -182,40 +252,171 @@ export function PresetOptions({
                 </p>
 
                 <div style={styles.pacePresetGrid}>
-                  {NYRR_PACE_PRESETS.map((preset) => {
-                    const isSelected = isPaceSelected(preset.pace10kSeconds)
-                    return (
-                      <button
-                        key={preset.corral}
-                        style={{
-                          ...styles.presetButton,
-                          ...(isSelected ? styles.presetButtonActive : {}),
-                        }}
-                        onClick={() =>
-                          handlePacePreset(
-                            calculatePaceForDistance(preset.pace10kSeconds),
-                            preset.corral
-                          )
-                        }
-                      >
+                  {NYRR_PACE_PRESETS.map((preset) => (
+                    <button
+                      key={preset.corral}
+                      style={{
+                        ...styles.presetButton,
+                        ...(isPaceSelected(preset.pace10kSeconds)
+                          ? styles.presetButtonActive
+                          : {}),
+                      }}
+                      onClick={() =>
+                        handlePacePreset(
+                          calculatePaceForDistance(preset.pace10kSeconds),
+                          preset.corral
+                        )
+                      }
+                    >
+                      <div>
                         <div>
-                          <div>
-                            {preset.corral}:{' '}
-                            {formatPaceForDisplay(
-                              calculatePaceForDistance(preset.pace10kSeconds)
-                            )}
-                          </div>
-                          <div style={styles.paceSource}>
-                            from {formatPaceForDisplay(preset.pace10kSeconds)}{' '}
-                            10K pace
-                          </div>
+                          {preset.corral}:{' '}
+                          {formatPaceForDisplay(
+                            calculatePaceForDistance(preset.pace10kSeconds)
+                          )}
                         </div>
-                      </button>
-                    )
-                  })}
+                        <div style={styles.paceSource}>
+                          from {formatPaceForDisplay(preset.pace10kSeconds)} 10K
+                          pace
+                        </div>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </>
             )}
+          </div>
+
+          {/* Pacing Strategy Toggle - only show if race profile is selected */}
+          {raceProfile && (
+            <div style={styles.presetSection}>
+              <h3 style={styles.presetHeader}>Pacing Strategy</h3>
+              <div style={styles.pacingStrategyToggle}>
+                <button
+                  style={{
+                    ...styles.pacingStrategyButton,
+                    ...(pacingStrategy === 'even-pace'
+                      ? styles.pacingStrategyButtonActive
+                      : {}),
+                  }}
+                  onClick={() => onPacingStrategyChange('even-pace')}
+                >
+                  Even Pace
+                  <div style={styles.pacingStrategyDescription}>
+                    Maintain constant pace, effort varies with terrain
+                  </div>
+                </button>
+                <button
+                  style={{
+                    ...styles.pacingStrategyButton,
+                    ...(pacingStrategy === 'even-effort'
+                      ? styles.pacingStrategyButtonActive
+                      : {}),
+                  }}
+                  onClick={() => onPacingStrategyChange('even-effort')}
+                >
+                  Even Effort
+                  <div style={styles.pacingStrategyDescription}>
+                    Maintain constant effort, pace varies with terrain
+                  </div>
+                </button>
+              </div>
+
+              {pacingStrategy === 'even-effort' && (
+                <div style={styles.gapNote}>
+                  <strong>About Grade Adjusted Pace:</strong> Our calculations
+                  are based on metabolic cost research showing ~3% pace
+                  adjustment per 1% uphill grade and ~2% per 1% downhill grade.
+                  This approach helps maintain consistent physiological effort
+                  across elevation changes. Learn more about{' '}
+                  <a
+                    href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6024138/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={styles.link}
+                  >
+                    running energetics research
+                  </a>{' '}
+                  and{' '}
+                  <a
+                    href="https://medium.com/strava-engineering/an-improved-gap-model-8b07ae8886c3"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={styles.link}
+                  >
+                    Strava's GAP approach
+                  </a>
+                  .
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Race Presets */}
+          <div style={styles.presetSection}>
+            <h3 style={styles.presetHeader}>Race Presets</h3>
+            <div style={styles.racePresets}>
+              {Object.entries(RACE_PROFILES).map(([key, race]) => {
+                const isSelected = isRaceSelected(key)
+                const sparklineSvg = generateElevationSparkline(
+                  race.elevationProfile,
+                  100,
+                  30
+                )
+
+                return (
+                  <button
+                    key={key}
+                    style={{
+                      ...styles.racePresetButton,
+                      ...(isSelected ? styles.racePresetButtonActive : {}),
+                    }}
+                    onClick={() => onRacePreset(race)}
+                  >
+                    <div style={styles.racePresetLayout}>
+                      <div style={styles.racePresetLeft}>
+                        {race.logoUrl && (
+                          <img
+                            src={race.logoUrl}
+                            alt={race.name}
+                            style={styles.raceLogo}
+                            onError={(e) => {
+                              // Hide logo if it fails to load and show fallback text
+                              e.currentTarget.style.display = 'none'
+                              const fallback = document.createElement('div')
+                              fallback.textContent = race.name
+                              fallback.style.cssText = `
+                                font-weight: 600;
+                                font-size: 1.1rem;
+                                color: var(--text-primary);
+                              `
+                              e.currentTarget.parentNode?.insertBefore(
+                                fallback,
+                                e.currentTarget.nextSibling
+                              )
+                            }}
+                          />
+                        )}
+                      </div>
+                      <div style={styles.raceSparklineContainer}>
+                        <div
+                          style={{
+                            ...styles.raceSparkline,
+                            color: isSelected
+                              ? 'rgba(231, 76, 60, 0.8)'
+                              : 'var(--text-tertiary)',
+                          }}
+                          dangerouslySetInnerHTML={{ __html: sparklineSvg }}
+                        />
+                        <div style={styles.elevationLabel}>
+                          Elevation Profile
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
       )}
@@ -228,6 +429,36 @@ const formatPace = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60)
   const secs = Math.round(seconds % 60)
   return `${minutes}:${secs.toString().padStart(2, '0')}/mi`
+}
+
+// Helper function to parse pace string to seconds
+const parsePaceStringToSeconds = (paceStr: string): number | null => {
+  const trimmed = paceStr.trim()
+  if (!trimmed) return null
+
+  // Handle simple number format (assume mm:ss when 3-4 digits)
+  if (/^\d+$/.test(trimmed)) {
+    const num = parseInt(trimmed)
+    if (num < 100) return num * 60 // Just minutes
+    if (num < 10000) {
+      // Format like 730 -> 7:30
+      const minutes = Math.floor(num / 100)
+      const seconds = num % 100
+      return minutes * 60 + seconds
+    }
+  }
+
+  // Handle mm:ss format
+  const parts = trimmed.split(':').map((p) => p.trim())
+  if (parts.length === 2) {
+    const minutes = parseInt(parts[0])
+    const seconds = parseInt(parts[1])
+    if (!isNaN(minutes) && !isNaN(seconds) && seconds < 60) {
+      return minutes * 60 + seconds
+    }
+  }
+
+  return null
 }
 
 // NYRR distance factors and data
@@ -317,7 +548,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   pacePresetGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(158px, 1fr))',
     gap: 8,
   },
   presetButton: {
@@ -358,5 +589,117 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-muted)',
     fontStyle: 'italic',
     marginTop: 2,
+  },
+  racePresets: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+    gap: 12,
+  },
+  racePresetButton: {
+    padding: '16px 20px',
+    border: '2px solid var(--border-color)',
+    borderRadius: 12,
+    backgroundColor: 'var(--bg-card-alt)',
+    color: 'var(--text-primary)',
+    fontSize: '1rem',
+    cursor: 'pointer',
+    textAlign: 'left',
+    transition: 'all 0.3s ease',
+    background:
+      'linear-gradient(135deg, var(--bg-card-alt) 0%, var(--bg-card) 100%)',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+  },
+  racePresetButtonActive: {
+    backgroundColor: 'rgba(231, 76, 60, 0.05)',
+    borderColor: 'rgba(231, 76, 60, 0.3)',
+    boxShadow: '0 4px 12px rgba(231, 76, 60, 0.15)',
+    color: 'var(--text-primary)',
+    fontWeight: 600,
+    transform: 'translateY(-1px)',
+  },
+  racePresetLayout: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    position: 'relative',
+  },
+  racePresetLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    flex: 1,
+    position: 'relative',
+    zIndex: 1,
+  },
+  raceLogo: {
+    height: '60px',
+    width: 'auto',
+    maxWidth: '70%',
+    objectFit: 'contain',
+    flexShrink: 0,
+  },
+  raceSparklineContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 0,
+    position: 'relative',
+    zIndex: 2,
+  },
+  raceSparkline: {
+    opacity: 0.8,
+    transition: 'all 0.2s ease',
+    minWidth: 100,
+    maxWidth: 140,
+    flex: '0 1 auto',
+  },
+  elevationLabel: {
+    fontSize: '0.7rem',
+    color: 'var(--text-muted)',
+    textAlign: 'center',
+    opacity: 0.7,
+    fontStyle: 'italic',
+  },
+  pacingStrategyToggle: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 12,
+  },
+  pacingStrategyButton: {
+    padding: '12px 16px',
+    border: '1px solid var(--border-color)',
+    borderColor: 'var(--border-color)',
+    borderRadius: 8,
+    backgroundColor: 'var(--bg-card)',
+    color: 'var(--text-primary)',
+    cursor: 'pointer',
+    textAlign: 'left',
+    transition: 'all 0.2s ease',
+    fontSize: '0.9rem',
+  },
+  pacingStrategyButtonActive: {
+    backgroundColor: 'rgba(231, 76, 60, 0.05)',
+    borderColor: 'rgba(231, 76, 60, 0.3)',
+    boxShadow: '0 2px 8px rgba(231, 76, 60, 0.1)',
+    color: 'var(--text-primary)',
+    fontWeight: 'normal',
+  },
+  pacingStrategyDescription: {
+    fontSize: '0.75rem',
+    color: 'var(--text-muted)',
+    marginTop: 4,
+    fontWeight: 'normal',
+  },
+  gapNote: {
+    marginTop: 12,
+    padding: '12px 16px',
+    backgroundColor: 'rgba(102, 126, 234, 0.08)',
+    borderRadius: 8,
+    fontSize: '0.85rem',
+    color: 'var(--text-secondary)',
+    lineHeight: 1.4,
+    border: '1px solid rgba(102, 126, 234, 0.2)',
   },
 }

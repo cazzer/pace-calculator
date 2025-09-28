@@ -1,8 +1,11 @@
 // ---- Types ----
 export type Unit = 'mi' | 'km'
 
-// ---- Props Types ----
-export type SplitsProps = {
+// Import from elevation to avoid duplication
+import { RaceProfile } from './elevation'
+export type { RaceProfile } from './elevation'
+
+export interface SplitsProps {
   /** Pace in seconds per selected paceUnit (mi or km) */
   paceSecondsPerUnit: number | null
   /** The unit that the pace is keyed to (per mile or per km) */
@@ -13,10 +16,14 @@ export type SplitsProps = {
   distanceUnit: Unit
   /** Optional: show per-segment times column */
   showSegmentTimes?: boolean
+  /** Optional: race profile information */
+  raceProfile?: RaceProfile | null
+  /** Optional: pacing strategy, either 'even-pace' or 'even-effort' */
+  pacingStrategy?: 'even-pace' | 'even-effort'
 }
 
-export type UnitToggleProps = {
+export interface UnitToggleProps {
   value: Unit
-  onChange: (u: Unit) => void
+  onChange: (unit: Unit) => void
   idBase: string
 }

@@ -7,13 +7,13 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "build:embed": "tsc && vite build --config vite.config.embed.ts",
-    "build:single": "tsc && vite build && echo 'Single HTML file created in dist/index.html'",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
   "dependencies": {
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "wouter": "^3.7.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.66",

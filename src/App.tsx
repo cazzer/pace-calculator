@@ -1,11 +1,19 @@
 import React from 'react'
 import { Unit } from './types'
 import { Splits } from './Splits'
-import { UnitToggle } from './UnitToggle'
 import { PresetOptions } from './PresetOptions'
+import { CalculationModeToggle } from './components/CalculationModeToggle'
+import { InputSection } from './components/InputSection'
+import { ResultCard } from './components/ResultCard'
 import { parsePaceToSeconds, formatHMS, convertDistanceTo } from './utils'
+import { RaceProfile, RACE_PROFILES } from './elevation'
+import { useLocation } from 'wouter'
+import { parseUrlParams, serializeUrlParams, AppState } from './hashRouter'
 
 export default function App() {
+  // Parse URL state immediately for initial values
+  const initialUrlState = parseUrlParams(window.location.search.slice(1))
+
   // Detect system theme preference
   const [isDarkMode, setIsDarkMode] = React.useState(
     () =>
@@ -22,18 +30,42 @@ export default function App() {
   }, [])
 
   // Calculation mode
-  const [calcMode, setCalcMode] = React.useState<'time' | 'pace'>('time')
+  const [calcMode, setCalcMode] = React.useState<'time' | 'pace'>(
+    initialUrlState.mode || 'time'
+  )
 
   // Pace (string to allow "mm:ss")
-  const [paceStr, setPaceStr] = React.useState<string>('7:30')
-  const [paceUnit, setPaceUnit] = React.useState<Unit>('mi')
+  const [paceStr, setPaceStr] = React.useState<string>(
+    initialUrlState.pace || '7:30'
+  )
+  const [paceUnit, setPaceUnit] = React.useState<Unit>(
+    initialUrlState.paceUnit || 'mi'
+  )
 
   // Goal time (for pace calculation mode)
-  const [goalTimeStr, setGoalTimeStr] = React.useState<string>('3:15:00')
+  const [goalTimeStr, setGoalTimeStr] = React.useState<string>(
+    initialUrlState.goalTime || '3:15:00'
+  )
 
   // Distance (numeric string input)
-  const [distanceStr, setDistanceStr] = React.useState<string>('26.2')
-  const [distanceUnit, setDistanceUnit] = React.useState<Unit>('mi')
+  const [distanceStr, setDistanceStr] = React.useState<string>(
+    initialUrlState.distance?.toString() || '26.2'
+  )
+  const [distanceUnit, setDistanceUnit] = React.useState<Unit>(
+    initialUrlState.distanceUnit || 'mi'
+  )
+
+  // Race profile state
+  const [raceProfile, setRaceProfile] = React.useState<RaceProfile | null>(
+    initialUrlState.race && RACE_PROFILES[initialUrlState.race]
+      ? RACE_PROFILES[initialUrlState.race]
+      : null
+  )
+
+  // Pacing strategy state
+  const [pacingStrategy, setPacingStrategy] = React.useState<
+    'even-pace' | 'even-effort'
+  >(initialUrlState.pacingStrategy || 'even-pace')
 
   // Format pace input as user types
   const handlePaceInput = (value: string) => {
@@ -153,13 +185,26 @@ export default function App() {
 
   // Preset handlers
   const handlePacePreset = (paceSeconds: number) => {
-    // The pace is already converted to the user's preferred unit, just format it as mm:ss
-    const minutes = Math.floor(paceSeconds / 60)
-    const seconds = Math.round(paceSeconds % 60)
-    const paceString = `${minutes}:${seconds.toString().padStart(2, '0')}`
+    if (calcMode === 'time') {
+      // Time calculation mode: set the pace
+      const minutes = Math.floor(paceSeconds / 60)
+      const seconds = Math.round(paceSeconds % 60)
+      const paceString = `${minutes}:${seconds.toString().padStart(2, '0')}`
+      setPaceStr(paceString)
+    } else {
+      // Pace calculation mode: calculate goal time from pace
+      const distanceInPaceUnits =
+        paceUnit === distanceUnit
+          ? distanceVal
+          : convertDistanceTo(paceUnit, distanceVal, distanceUnit)
 
-    setPaceStr(paceString)
-    setCalcMode('time') // Switch to time calculation mode
+      if (Number.isFinite(distanceInPaceUnits) && distanceInPaceUnits > 0) {
+        const totalTimeSeconds = paceSeconds * distanceInPaceUnits
+        const goalTimeString = formatHMS(totalTimeSeconds)
+        setGoalTimeStr(goalTimeString)
+      }
+    }
+    // Don't change calculation mode - respect user's current choice
   }
 
   const handleDistancePreset = (distance: number, unit: Unit) => {
@@ -167,31 +212,93 @@ export default function App() {
     setDistanceUnit(unit)
   }
 
-  // Sticky header state - DISABLED FOR NOW
-  const [isCompact, setIsCompact] = React.useState(false)
-  const headerRef = React.useRef<HTMLDivElement>(null)
-  const observerTargetRef = React.useRef<HTMLDivElement>(null)
+  const handleRacePreset = (race: RaceProfile) => {
+    setDistanceStr(race.distance.toString())
+    setDistanceUnit(race.unit)
+    setRaceProfile(race)
+    // URL will be updated automatically via useEffect
+  }
 
-  // Set up intersection observer for sticky header - DISABLED
+  const handleClearRace = () => {
+    setRaceProfile(null)
+  }
+
+  // URL state management
+  const [location, setLocation] = useLocation()
+
+  const updateUrlState = React.useCallback((newState: AppState) => {
+    const search = serializeUrlParams(newState)
+    const newUrl = search
+      ? `${window.location.pathname}?${search}`
+      : window.location.pathname
+    window.history.replaceState({}, '', newUrl)
+  }, [])
+
+  // Update URL when state changes
   React.useEffect(() => {
-    // Commenting out observer to disable sticky functionality
-    /*
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsCompact(!entry.isIntersecting)
-      },
-      {
-        threshold: 0,
-        rootMargin: '0px 0px -50px 0px',
-      }
-    )
-
-    if (observerTargetRef.current) {
-      observer.observe(observerTargetRef.current)
+    const currentState: AppState = {
+      distance: Number.isFinite(distanceVal) ? distanceVal : undefined,
+      distanceUnit: distanceUnit,
+      pace: paceStr || undefined,
+      paceUnit: paceUnit,
+      goalTime: goalTimeStr || undefined,
+      mode: calcMode,
+      race: raceProfile
+        ? Object.keys(RACE_PROFILES).find(
+            (key) => RACE_PROFILES[key] === raceProfile
+          )
+        : undefined,
+      pacingStrategy: pacingStrategy,
     }
 
-    return () => observer.disconnect()
-    */
+    updateUrlState(currentState)
+  }, [
+    distanceVal,
+    distanceUnit,
+    paceStr,
+    paceUnit,
+    goalTimeStr,
+    calcMode,
+    raceProfile,
+    pacingStrategy,
+    updateUrlState,
+  ])
+
+  // Listen for popstate events (back/forward navigation)
+  React.useEffect(() => {
+    const handlePopState = () => {
+      const currentUrlState = parseUrlParams(window.location.search.slice(1))
+
+      if (currentUrlState.distance !== undefined) {
+        setDistanceStr(currentUrlState.distance.toString())
+      }
+      if (currentUrlState.distanceUnit) {
+        setDistanceUnit(currentUrlState.distanceUnit)
+      }
+      if (currentUrlState.pace) {
+        setPaceStr(currentUrlState.pace)
+      }
+      if (currentUrlState.paceUnit) {
+        setPaceUnit(currentUrlState.paceUnit)
+      }
+      if (currentUrlState.goalTime) {
+        setGoalTimeStr(currentUrlState.goalTime)
+      }
+      if (currentUrlState.mode) {
+        setCalcMode(currentUrlState.mode)
+      }
+      if (currentUrlState.race && RACE_PROFILES[currentUrlState.race]) {
+        setRaceProfile(RACE_PROFILES[currentUrlState.race])
+      } else if (!currentUrlState.race) {
+        setRaceProfile(null)
+      }
+      if (currentUrlState.pacingStrategy) {
+        setPacingStrategy(currentUrlState.pacingStrategy)
+      }
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
   return (
@@ -202,185 +309,88 @@ export default function App() {
       }}
       className="pace-calculator-app"
     >
+      <style>{`
+        @media (max-width: 768px) {
+          .desktop-label { display: none !important; }
+          .mobile-label { display: inline !important; }
+          .pace-calculator-app {
+            padding: 0.5rem 0.25rem !important;
+          }
+          .pace-calculator-app > div {
+            padding: 0 4px !important;
+          }
+        }
+        @media (min-width: 769px) {
+          .desktop-label { display: inline !important; }
+          .mobile-label { display: none !important; }
+        }
+
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
+
       <div style={styles.page}>
-        {/* Observer target - DISABLED */}
-        {/*
-        <div
-          ref={observerTargetRef}
-          style={styles.observerTarget}
-        />
-        */}
+        <div>
+          <h1 style={styles.h1}>Pace Calculator</h1>
 
-        {/* Header Container - back to normal mode */}
-        <div ref={headerRef}>
-          <h1 style={styles.h1}>Race Time Calculator</h1>
+          <CalculationModeToggle
+            calcMode={calcMode}
+            onChange={setCalcMode}
+          />
 
-          {/* Calculation Mode Toggle */}
-          <div style={styles.field}>
-            <div
-              style={styles.modeToggle}
-              className="mode-toggle-mobile"
-            >
-              <button
-                style={{
-                  ...styles.modeButton,
-                  ...(calcMode === 'time' ? styles.modeButtonActive : {}),
-                }}
-                className="mode-button-mobile"
-                onClick={() => setCalcMode('time')}
-              >
-                Calculate Time from Pace
-              </button>
-              <button
-                style={{
-                  ...styles.modeButton,
-                  ...(calcMode === 'pace' ? styles.modeButtonActive : {}),
-                }}
-                className="mode-button-mobile"
-                onClick={() => setCalcMode('pace')}
-              >
-                Calculate Pace from Time
-              </button>
-            </div>
-          </div>
+          <InputSection
+            calcMode={calcMode}
+            distanceStr={distanceStr}
+            distanceUnit={distanceUnit}
+            distanceError={distanceError}
+            onDistanceChange={setDistanceStr}
+            onDistanceUnitChange={setDistanceUnit}
+            paceStr={paceStr}
+            paceUnit={paceUnit}
+            paceError={paceError}
+            onPaceChange={handlePaceInput}
+            onPaceUnitChange={setPaceUnit}
+            goalTimeStr={goalTimeStr}
+            goalTimeError={goalTimeError}
+            onGoalTimeChange={handleGoalTimeInput}
+          />
 
-          <div
-            style={styles.row}
-            className="row-mobile"
-          >
-            {/* Distance */}
-            <div style={styles.field}>
-              <label
-                style={styles.label}
-                htmlFor="distance-input"
-              >
-                Distance
-              </label>
-              <div style={styles.inline}>
-                <input
-                  id="distance-input"
-                  inputMode="decimal"
-                  placeholder="e.g., 5"
-                  value={distanceStr}
-                  onChange={(e) => setDistanceStr(e.target.value)}
-                  style={{
-                    ...styles.input,
-                    borderColor: distanceError ? '#c0392b' : '#ccc',
-                  }}
-                />
-                <UnitToggle
-                  value={distanceUnit}
-                  onChange={setDistanceUnit}
-                  idBase="distance"
-                />
-              </div>
-              <div style={styles.help}>
-                Examples: <code>5</code> (mi/km), <code>13.1</code>,{' '}
-                <code>10</code>.
-              </div>
-            </div>
-
-            {/* Pace or Goal Time Input */}
-            {calcMode === 'time' ? (
-              <div style={styles.field}>
-                <label
-                  style={styles.label}
-                  htmlFor="pace-input"
-                >
-                  Pace ({paceUnit === 'mi' ? 'per mile' : 'per kilometer'})
-                </label>
-                <div style={styles.inline}>
-                  <input
-                    id="pace-input"
-                    inputMode="numeric"
-                    placeholder="730 → 7:30"
-                    value={paceStr}
-                    onChange={(e) => handlePaceInput(e.target.value)}
-                    style={{
-                      ...styles.input,
-                      borderColor: paceError ? '#c0392b' : '#ccc',
-                    }}
-                  />
-                  <UnitToggle
-                    value={paceUnit}
-                    onChange={setPaceUnit}
-                    idBase="pace"
-                  />
-                </div>
-                <div style={styles.help}>
-                  Just type numbers: <code>730</code> → <code>7:30</code>
-                </div>
-              </div>
-            ) : (
-              <div style={styles.field}>
-                <label
-                  style={styles.label}
-                  htmlFor="goal-time-input"
-                >
-                  Goal Time
-                </label>
-                <div style={styles.inline}>
-                  <input
-                    id="goal-time-input"
-                    inputMode="numeric"
-                    placeholder="31500 → 3:15:00"
-                    value={goalTimeStr}
-                    onChange={(e) => handleGoalTimeInput(e.target.value)}
-                    style={{
-                      ...styles.input,
-                      borderColor: goalTimeError ? '#c0392b' : '#ccc',
-                    }}
-                  />
-                </div>
-                <div style={styles.help}>
-                  Type numbers: <code>31500</code> → <code>3:15:00</code>,{' '}
-                  <code>2530</code> → <code>25:30</code>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Result */}
-          <div
-            style={styles.resultCard}
-            aria-live="polite"
-          >
-            <div style={styles.resultLabel}>
-              {calcMode === 'time' ? 'Total Time' : 'Target Pace'}
-            </div>
-            <div style={styles.resultValue}>
-              {calcMode === 'time'
-                ? totalSeconds == null
-                  ? '—'
-                  : formatHMS(totalSeconds)
-                : targetPaceSec == null
-                ? '—'
-                : formatHMS(targetPaceSec)}
-            </div>
-            {paceError && calcMode === 'time' && (
-              <div style={styles.error}>Invalid pace. Try 7:30 or 7.5</div>
-            )}
-            {goalTimeError && calcMode === 'pace' && (
-              <div style={styles.error}>
-                Invalid goal time. Try 3:15:00 or 195
-              </div>
-            )}
-            {distanceError && (
-              <div style={styles.error}>
-                Invalid distance. Use a non-negative number.
-              </div>
-            )}
-          </div>
+          <ResultCard
+            calcMode={calcMode}
+            totalSeconds={totalSeconds}
+            targetPaceSec={targetPaceSec}
+            paceError={paceError}
+            goalTimeError={goalTimeError}
+            distanceError={distanceError}
+            distanceVal={distanceVal}
+            distanceUnit={distanceUnit}
+            paceStr={paceStr}
+            goalTimeStr={goalTimeStr}
+            paceUnit={paceUnit}
+          />
         </div>
 
         {/* Preset Options Section */}
         <PresetOptions
           onPacePreset={handlePacePreset}
           onDistancePreset={handleDistancePreset}
+          onRacePreset={handleRacePreset}
+          onClearRace={handleClearRace}
           currentDistance={Number.isFinite(distanceVal) ? distanceVal : NaN}
           currentDistanceUnit={distanceUnit}
           paceUnit={paceUnit}
           currentPaceSeconds={paceSec}
+          raceProfile={raceProfile}
+          pacingStrategy={pacingStrategy}
+          onPacingStrategyChange={setPacingStrategy}
         />
 
         <Splits
@@ -389,7 +399,21 @@ export default function App() {
           totalDistance={Number.isFinite(distanceVal) ? distanceVal : 0}
           distanceUnit={distanceUnit}
           showSegmentTimes={false}
+          raceProfile={raceProfile}
+          pacingStrategy={pacingStrategy}
         />
+
+        {/* Footer with GitHub link */}
+        <div style={styles.footer}>
+          <a
+            href="https://github.com/cazzer/pace-calculator/issues"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={styles.footerLink}
+          >
+            Report an issue or request a feature →
+          </a>
+        </div>
       </div>
     </div>
   )
@@ -506,102 +530,108 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-muted)',
   },
   resultCard: {
-    marginTop: 20,
+    marginTop: 4, // Reduced since observer target has margin now
     padding: 16,
     border: '1px solid var(--border-color)',
     borderRadius: 12,
     background: 'var(--bg-card)',
-  },
-  modeToggle: {
-    display: 'flex',
-    flexDirection: 'row',
-    gap: 2,
-    padding: 2,
-    backgroundColor: 'var(--bg-secondary)',
-    borderRadius: 8,
-    marginBottom: 16,
-    width: '100%',
-    boxSizing: 'border-box',
-  },
-  modeButton: {
-    flex: 1,
-    padding: '8px 16px',
-    border: 'none',
-    borderRadius: 6,
-    backgroundColor: 'var(--button-bg)',
-    cursor: 'pointer',
-    fontSize: '0.9rem',
-    fontWeight: 500,
-    transition: 'all 0.2s ease',
-    color: 'var(--button-text)',
-    minWidth: 0,
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-  },
-  modeButtonActive: {
-    backgroundColor: 'var(--button-bg-active)',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-    color: 'var(--button-text-active)',
-  },
-  stickyHeader: {
-    position: 'sticky',
-    backdropFilter: 'blur(20px)',
-    top: 0,
-    backgroundColor: 'inherit',
-    zIndex: 10,
-    paddingBottom: '16px',
-    marginBottom: '16px',
-    borderBottom: '1px solid var(--border-color)',
-  },
-  observerTarget: {
-    height: '1px',
-    position: 'absolute',
-    top: 10, // Move trigger point even further down
-    width: '100%',
-    pointerEvents: 'none',
-    visibility: 'hidden', // Make it completely invisible
-  },
-  stickyHeaderContainer: {
     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    zIndex: 10,
-  },
-  stickyHeaderCompact: {
-    position: 'sticky',
-    top: '16px', // More space from top edge
-    backgroundColor: 'inherit', // Use inherited background instead of fixed color
-    backdropFilter: 'blur(20px)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '16px',
-    padding: '12px 16px',
-    margin: '0 0 16px 0', // Remove negative margins
-    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+    position: 'relative',
   },
 
-  h1Compact: {
-    fontSize: '1.2rem',
-    margin: '0 0 8px 0',
+  observerTarget: {
+    height: '1px',
+    width: '100%',
+    pointerEvents: 'none',
+    visibility: 'hidden',
+    marginTop: 16,
   },
-  modeToggleCompact: {
-    marginBottom: '8px',
+
+  stickyContent: {
+    maxWidth: 820,
+    margin: '0 auto',
+    padding: '12px 16px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+    alignItems: 'center',
   },
-  modeButtonCompact: {
-    padding: '6px 12px',
+
+  stickyResultCard: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+
+  resultValue: {
+    fontSize: '1.8rem',
+    fontWeight: 700,
+    color: 'var(--text-primary)',
+    margin: 0,
+    transition: 'font-size 0.3s ease',
+  },
+
+  resultLabel: {
+    fontSize: '0.9rem',
+    color: 'var(--text-secondary)',
+    marginTop: 4,
+    fontWeight: 500,
+    transition: 'all 0.3s ease',
+  },
+
+  stickyFields: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 24,
+    width: '100%',
+    maxWidth: 400,
+    opacity: 0.7,
+    animation: 'fadeInUp 0.4s ease-out 0.1s both',
+  },
+
+  stickyField: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    textAlign: 'center',
+  },
+
+  stickyFieldValue: {
+    fontSize: '0.9rem',
+    fontWeight: 500,
+    color: 'var(--text-primary)',
+    lineHeight: 1.2,
+  },
+
+  stickyFieldLabel: {
+    fontSize: '0.7rem',
+    color: 'var(--text-tertiary)',
+    marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: '0.3px',
+  },
+
+  error: {
+    marginTop: 8,
+    padding: '8px 12px',
+    backgroundColor: '#fef2f2',
+    border: '1px solid #fecaca',
+    borderRadius: 6,
+    color: '#dc2626',
     fontSize: '0.85rem',
   },
-  inputCompact: {
-    padding: '8px 10px',
-    fontSize: '0.9rem',
+
+  footer: {
+    marginTop: 48,
+    paddingTop: 24,
+    borderTop: '1px solid var(--border-color)',
+    textAlign: 'center',
   },
-  resultCardCompact: {
-    marginTop: '8px',
-    padding: '8px 12px',
-  },
-  resultLabelCompact: {
-    fontSize: '0.8rem',
-  },
-  resultValueCompact: {
-    fontSize: '1.4rem',
-    marginTop: '2px',
+
+  footerLink: {
+    color: 'var(--text-tertiary)',
+    textDecoration: 'none',
+    fontSize: '0.85rem',
+    transition: 'color 0.2s ease',
   },
 }

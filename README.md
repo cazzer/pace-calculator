@@ -28,13 +28,13 @@ The app will be available at http://localhost:5173/
 npm run build
 ```
 
-### Single File Build (Production)
+### Single File Build (For NBR Squarespace)
 
 ```bash
-npm run build:single
+npm run build:embed
 ```
 
-This creates a single `dist/index.html` file that contains:
+This creates a single `dist-embed/embed.html` file that contains:
 
 - All React/TypeScript code (minified)
 - All dependencies inlined
@@ -47,6 +47,8 @@ The resulting HTML file is completely self-contained and can be:
 - Opened directly in browsers
 - Embedded in other applications
 - Shared as a single file
+
+Note that is has some funky margins to account for the NBR Squarespace styling.
 
 ## Project Structure
 
