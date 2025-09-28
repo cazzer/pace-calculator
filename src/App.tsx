@@ -152,7 +152,7 @@ export default function App() {
     distanceStr.trim().length > 0 && !Number.isFinite(distanceVal)
 
   // Preset handlers
-  const handlePacePreset = (paceSeconds: number, corral: string) => {
+  const handlePacePreset = (paceSeconds: number) => {
     // The pace is already converted to the user's preferred unit, just format it as mm:ss
     const minutes = Math.floor(paceSeconds / 60)
     const seconds = Math.round(paceSeconds % 60)
@@ -167,6 +167,33 @@ export default function App() {
     setDistanceUnit(unit)
   }
 
+  // Sticky header state - DISABLED FOR NOW
+  const [isCompact, setIsCompact] = React.useState(false)
+  const headerRef = React.useRef<HTMLDivElement>(null)
+  const observerTargetRef = React.useRef<HTMLDivElement>(null)
+
+  // Set up intersection observer for sticky header - DISABLED
+  React.useEffect(() => {
+    // Commenting out observer to disable sticky functionality
+    /*
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsCompact(!entry.isIntersecting)
+      },
+      {
+        threshold: 0,
+        rootMargin: '0px 0px -50px 0px',
+      }
+    )
+
+    if (observerTargetRef.current) {
+      observer.observe(observerTargetRef.current)
+    }
+
+    return () => observer.disconnect()
+    */
+  }, [])
+
   return (
     <div
       style={{
@@ -176,131 +203,173 @@ export default function App() {
       className="pace-calculator-app"
     >
       <div style={styles.page}>
-        <h1 style={styles.h1}>Race Time Calculator</h1>
-
-        {/* Calculation Mode Toggle */}
-        <div style={styles.field}>
-          <div
-            style={styles.modeToggle}
-            className="mode-toggle-mobile"
-          >
-            <button
-              style={{
-                ...styles.modeButton,
-                ...(calcMode === 'time' ? styles.modeButtonActive : {}),
-              }}
-              className="mode-button-mobile"
-              onClick={() => setCalcMode('time')}
-            >
-              Calculate Time from Pace
-            </button>
-            <button
-              style={{
-                ...styles.modeButton,
-                ...(calcMode === 'pace' ? styles.modeButtonActive : {}),
-              }}
-              className="mode-button-mobile"
-              onClick={() => setCalcMode('pace')}
-            >
-              Calculate Pace from Time
-            </button>
-          </div>
-        </div>
-
+        {/* Observer target - DISABLED */}
+        {/*
         <div
-          style={styles.row}
-          className="row-mobile"
-        >
-          {/* Pace or Goal Time Input */}
-          {calcMode === 'time' ? (
+          ref={observerTargetRef}
+          style={styles.observerTarget}
+        />
+        */}
+
+        {/* Header Container - back to normal mode */}
+        <div ref={headerRef}>
+          <h1 style={styles.h1}>Race Time Calculator</h1>
+
+          {/* Calculation Mode Toggle */}
+          <div style={styles.field}>
+            <div
+              style={styles.modeToggle}
+              className="mode-toggle-mobile"
+            >
+              <button
+                style={{
+                  ...styles.modeButton,
+                  ...(calcMode === 'time' ? styles.modeButtonActive : {}),
+                }}
+                className="mode-button-mobile"
+                onClick={() => setCalcMode('time')}
+              >
+                Calculate Time from Pace
+              </button>
+              <button
+                style={{
+                  ...styles.modeButton,
+                  ...(calcMode === 'pace' ? styles.modeButtonActive : {}),
+                }}
+                className="mode-button-mobile"
+                onClick={() => setCalcMode('pace')}
+              >
+                Calculate Pace from Time
+              </button>
+            </div>
+          </div>
+
+          <div
+            style={styles.row}
+            className="row-mobile"
+          >
+            {/* Distance */}
             <div style={styles.field}>
               <label
                 style={styles.label}
-                htmlFor="pace-input"
+                htmlFor="distance-input"
               >
-                Pace ({paceUnit === 'mi' ? 'per mile' : 'per kilometer'})
+                Distance
               </label>
               <div style={styles.inline}>
                 <input
-                  id="pace-input"
-                  inputMode="numeric"
-                  placeholder="730 → 7:30"
-                  value={paceStr}
-                  onChange={(e) => handlePaceInput(e.target.value)}
+                  id="distance-input"
+                  inputMode="decimal"
+                  placeholder="e.g., 5"
+                  value={distanceStr}
+                  onChange={(e) => setDistanceStr(e.target.value)}
                   style={{
                     ...styles.input,
-                    borderColor: paceError ? '#c0392b' : '#ccc',
+                    borderColor: distanceError ? '#c0392b' : '#ccc',
                   }}
                 />
                 <UnitToggle
-                  value={paceUnit}
-                  onChange={setPaceUnit}
-                  idBase="pace"
+                  value={distanceUnit}
+                  onChange={setDistanceUnit}
+                  idBase="distance"
                 />
               </div>
               <div style={styles.help}>
-                Just type numbers: <code>730</code> → <code>7:30</code>,{' '}
-                <code>1045</code> → <code>10:45</code>
+                Examples: <code>5</code> (mi/km), <code>13.1</code>,{' '}
+                <code>10</code>.
               </div>
             </div>
-          ) : (
-            <div style={styles.field}>
-              <label
-                style={styles.label}
-                htmlFor="goal-time-input"
-              >
-                Goal Time
-              </label>
-              <div style={styles.inline}>
-                <input
-                  id="goal-time-input"
-                  inputMode="numeric"
-                  placeholder="31500 → 3:15:00"
-                  value={goalTimeStr}
-                  onChange={(e) => handleGoalTimeInput(e.target.value)}
-                  style={{
-                    ...styles.input,
-                    borderColor: goalTimeError ? '#c0392b' : '#ccc',
-                  }}
-                />
-              </div>
-              <div style={styles.help}>
-                Type numbers: <code>31500</code> → <code>3:15:00</code>,{' '}
-                <code>2530</code> → <code>25:30</code>
-              </div>
-            </div>
-          )}
 
-          {/* Distance */}
-          <div style={styles.field}>
-            <label
-              style={styles.label}
-              htmlFor="distance-input"
-            >
-              Distance
-            </label>
-            <div style={styles.inline}>
-              <input
-                id="distance-input"
-                inputMode="decimal"
-                placeholder="e.g., 5"
-                value={distanceStr}
-                onChange={(e) => setDistanceStr(e.target.value)}
-                style={{
-                  ...styles.input,
-                  borderColor: distanceError ? '#c0392b' : '#ccc',
-                }}
-              />
-              <UnitToggle
-                value={distanceUnit}
-                onChange={setDistanceUnit}
-                idBase="distance"
-              />
+            {/* Pace or Goal Time Input */}
+            {calcMode === 'time' ? (
+              <div style={styles.field}>
+                <label
+                  style={styles.label}
+                  htmlFor="pace-input"
+                >
+                  Pace ({paceUnit === 'mi' ? 'per mile' : 'per kilometer'})
+                </label>
+                <div style={styles.inline}>
+                  <input
+                    id="pace-input"
+                    inputMode="numeric"
+                    placeholder="730 → 7:30"
+                    value={paceStr}
+                    onChange={(e) => handlePaceInput(e.target.value)}
+                    style={{
+                      ...styles.input,
+                      borderColor: paceError ? '#c0392b' : '#ccc',
+                    }}
+                  />
+                  <UnitToggle
+                    value={paceUnit}
+                    onChange={setPaceUnit}
+                    idBase="pace"
+                  />
+                </div>
+                <div style={styles.help}>
+                  Just type numbers: <code>730</code> → <code>7:30</code>
+                </div>
+              </div>
+            ) : (
+              <div style={styles.field}>
+                <label
+                  style={styles.label}
+                  htmlFor="goal-time-input"
+                >
+                  Goal Time
+                </label>
+                <div style={styles.inline}>
+                  <input
+                    id="goal-time-input"
+                    inputMode="numeric"
+                    placeholder="31500 → 3:15:00"
+                    value={goalTimeStr}
+                    onChange={(e) => handleGoalTimeInput(e.target.value)}
+                    style={{
+                      ...styles.input,
+                      borderColor: goalTimeError ? '#c0392b' : '#ccc',
+                    }}
+                  />
+                </div>
+                <div style={styles.help}>
+                  Type numbers: <code>31500</code> → <code>3:15:00</code>,{' '}
+                  <code>2530</code> → <code>25:30</code>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Result */}
+          <div
+            style={styles.resultCard}
+            aria-live="polite"
+          >
+            <div style={styles.resultLabel}>
+              {calcMode === 'time' ? 'Total Time' : 'Target Pace'}
             </div>
-            <div style={styles.help}>
-              Examples: <code>5</code> (mi/km), <code>13.1</code>,{' '}
-              <code>10</code>.
+            <div style={styles.resultValue}>
+              {calcMode === 'time'
+                ? totalSeconds == null
+                  ? '—'
+                  : formatHMS(totalSeconds)
+                : targetPaceSec == null
+                ? '—'
+                : formatHMS(targetPaceSec)}
             </div>
+            {paceError && calcMode === 'time' && (
+              <div style={styles.error}>Invalid pace. Try 7:30 or 7.5</div>
+            )}
+            {goalTimeError && calcMode === 'pace' && (
+              <div style={styles.error}>
+                Invalid goal time. Try 3:15:00 or 195
+              </div>
+            )}
+            {distanceError && (
+              <div style={styles.error}>
+                Invalid distance. Use a non-negative number.
+              </div>
+            )}
           </div>
         </div>
 
@@ -314,37 +383,6 @@ export default function App() {
           currentPaceSeconds={paceSec}
         />
 
-        {/* Result */}
-        <div
-          style={styles.resultCard}
-          aria-live="polite"
-        >
-          <div style={styles.resultLabel}>
-            {calcMode === 'time' ? 'Total Time' : 'Target Pace'}
-          </div>
-          <div style={styles.resultValue}>
-            {calcMode === 'time'
-              ? totalSeconds == null
-                ? '—'
-                : formatHMS(totalSeconds)
-              : targetPaceSec == null
-              ? '—'
-              : formatHMS(targetPaceSec)}
-          </div>
-          {paceError && calcMode === 'time' && (
-            <div style={styles.error}>Invalid pace. Try 7:30 or 7.5</div>
-          )}
-          {goalTimeError && calcMode === 'pace' && (
-            <div style={styles.error}>
-              Invalid goal time. Try 3:15:00 or 195
-            </div>
-          )}
-          {distanceError && (
-            <div style={styles.error}>
-              Invalid distance. Use a non-negative number.
-            </div>
-          )}
-        </div>
         <Splits
           paceSecondsPerUnit={calcMode === 'time' ? paceSec : targetPaceSec}
           paceUnit={paceUnit}
@@ -473,22 +511,6 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid var(--border-color)',
     borderRadius: 12,
     background: 'var(--bg-card)',
-    backdropFilter: 'blur(10px)',
-  },
-  resultLabel: {
-    fontSize: '.9rem',
-    color: 'var(--text-secondary)',
-  },
-  resultValue: {
-    fontSize: '1.8rem',
-    fontWeight: 700,
-    marginTop: 4,
-    color: 'var(--text-primary)',
-  },
-  error: {
-    marginTop: 8,
-    color: '#c0392b',
-    fontSize: '.9rem',
   },
   modeToggle: {
     display: 'flex',
@@ -521,5 +543,65 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: 'var(--button-bg-active)',
     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
     color: 'var(--button-text-active)',
+  },
+  stickyHeader: {
+    position: 'sticky',
+    backdropFilter: 'blur(20px)',
+    top: 0,
+    backgroundColor: 'inherit',
+    zIndex: 10,
+    paddingBottom: '16px',
+    marginBottom: '16px',
+    borderBottom: '1px solid var(--border-color)',
+  },
+  observerTarget: {
+    height: '1px',
+    position: 'absolute',
+    top: 10, // Move trigger point even further down
+    width: '100%',
+    pointerEvents: 'none',
+    visibility: 'hidden', // Make it completely invisible
+  },
+  stickyHeaderContainer: {
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    zIndex: 10,
+  },
+  stickyHeaderCompact: {
+    position: 'sticky',
+    top: '16px', // More space from top edge
+    backgroundColor: 'inherit', // Use inherited background instead of fixed color
+    backdropFilter: 'blur(20px)',
+    border: '1px solid var(--border-color)',
+    borderRadius: '16px',
+    padding: '12px 16px',
+    margin: '0 0 16px 0', // Remove negative margins
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+  },
+
+  h1Compact: {
+    fontSize: '1.2rem',
+    margin: '0 0 8px 0',
+  },
+  modeToggleCompact: {
+    marginBottom: '8px',
+  },
+  modeButtonCompact: {
+    padding: '6px 12px',
+    fontSize: '0.85rem',
+  },
+  inputCompact: {
+    padding: '8px 10px',
+    fontSize: '0.9rem',
+  },
+  resultCardCompact: {
+    marginTop: '8px',
+    padding: '8px 12px',
+  },
+  resultLabelCompact: {
+    fontSize: '0.8rem',
+  },
+  resultValueCompact: {
+    fontSize: '1.4rem',
+    marginTop: '2px',
   },
 }
