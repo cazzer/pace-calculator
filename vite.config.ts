@@ -1,17 +1,20 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { viteSingleFile } from 'vite-plugin-singlefile'
 
-// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), viteSingleFile()],
+  plugins: [react()],
   build: {
-    target: 'esnext',
-    assetsInlineLimit: 100000000,
-    chunkSizeWarningLimit: 100000000,
-    cssCodeSplit: false,
-  },
-  server: {
-    host: '0.0.0.0',
+    lib: {
+      entry: './src/embed.tsx',
+      name: 'PaceCalculator',
+      fileName: 'pace-calculator',
+      formats: ['iife'], // Immediately Invoked Function Expression for embedding
+    },
+    rollupOptions: {
+      external: [], // Don't externalize anything - bundle everything
+      output: {
+        globals: {},
+      },
+    },
   },
 })

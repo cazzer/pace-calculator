@@ -5,6 +5,21 @@ import { UnitToggle } from './UnitToggle'
 import { parsePaceToSeconds, formatHMS, convertDistanceTo } from './utils'
 
 export default function App() {
+  // Detect system theme preference
+  const [isDarkMode, setIsDarkMode] = React.useState(
+    () =>
+      window.matchMedia &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches
+  )
+
+  React.useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const handleChange = (e: MediaQueryListEvent) => setIsDarkMode(e.matches)
+
+    mediaQuery.addEventListener('change', handleChange)
+    return () => mediaQuery.removeEventListener('change', handleChange)
+  }, [])
+
   // Calculation mode
   const [calcMode, setCalcMode] = React.useState<'time' | 'pace'>('time')
 
@@ -136,193 +151,250 @@ export default function App() {
     distanceStr.trim().length > 0 && !Number.isFinite(distanceVal)
 
   return (
-    <div style={styles.page}>
-      <h1 style={styles.h1}>Race Time Calculator</h1>
+    <div
+      style={{
+        ...styles.appWrapper,
+        ...(isDarkMode ? styles.darkTheme : styles.lightTheme),
+      }}
+      className="pace-calculator-app"
+    >
+      <div style={styles.page}>
+        <h1 style={styles.h1}>Race Time Calculator</h1>
 
-      {/* Calculation Mode Toggle */}
-      <div style={styles.field}>
-        <label style={styles.label}>Calculation Mode</label>
-        <div style={styles.modeToggle}>
-          <button
-            style={{
-              ...styles.modeButton,
-              ...(calcMode === 'time' ? styles.modeButtonActive : {}),
-            }}
-            onClick={() => setCalcMode('time')}
+        {/* Calculation Mode Toggle */}
+        <div style={styles.field}>
+          <div
+            style={styles.modeToggle}
+            className="mode-toggle-mobile"
           >
-            Calculate Time from Pace
-          </button>
-          <button
-            style={{
-              ...styles.modeButton,
-              ...(calcMode === 'pace' ? styles.modeButtonActive : {}),
-            }}
-            onClick={() => setCalcMode('pace')}
-          >
-            Calculate Pace from Time
-          </button>
+            <button
+              style={{
+                ...styles.modeButton,
+                ...(calcMode === 'time' ? styles.modeButtonActive : {}),
+              }}
+              className="mode-button-mobile"
+              onClick={() => setCalcMode('time')}
+            >
+              Calculate Time from Pace
+            </button>
+            <button
+              style={{
+                ...styles.modeButton,
+                ...(calcMode === 'pace' ? styles.modeButtonActive : {}),
+              }}
+              className="mode-button-mobile"
+              onClick={() => setCalcMode('pace')}
+            >
+              Calculate Pace from Time
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div style={styles.row}>
-        {/* Pace or Goal Time Input */}
-        {calcMode === 'time' ? (
+        <div
+          style={styles.row}
+          className="row-mobile"
+        >
+          {/* Pace or Goal Time Input */}
+          {calcMode === 'time' ? (
+            <div style={styles.field}>
+              <label
+                style={styles.label}
+                htmlFor="pace-input"
+              >
+                Pace ({paceUnit === 'mi' ? 'per mile' : 'per kilometer'})
+              </label>
+              <div style={styles.inline}>
+                <input
+                  id="pace-input"
+                  inputMode="numeric"
+                  placeholder="730 → 7:30"
+                  value={paceStr}
+                  onChange={(e) => handlePaceInput(e.target.value)}
+                  style={{
+                    ...styles.input,
+                    borderColor: paceError ? '#c0392b' : '#ccc',
+                  }}
+                />
+                <UnitToggle
+                  value={paceUnit}
+                  onChange={setPaceUnit}
+                  idBase="pace"
+                />
+              </div>
+              <div style={styles.help}>
+                Just type numbers: <code>730</code> → <code>7:30</code>,{' '}
+                <code>1045</code> → <code>10:45</code>
+              </div>
+            </div>
+          ) : (
+            <div style={styles.field}>
+              <label
+                style={styles.label}
+                htmlFor="goal-time-input"
+              >
+                Goal Time
+              </label>
+              <div style={styles.inline}>
+                <input
+                  id="goal-time-input"
+                  inputMode="numeric"
+                  placeholder="31500 → 3:15:00"
+                  value={goalTimeStr}
+                  onChange={(e) => handleGoalTimeInput(e.target.value)}
+                  style={{
+                    ...styles.input,
+                    borderColor: goalTimeError ? '#c0392b' : '#ccc',
+                  }}
+                />
+              </div>
+              <div style={styles.help}>
+                Type numbers: <code>31500</code> → <code>3:15:00</code>,{' '}
+                <code>2530</code> → <code>25:30</code>
+              </div>
+            </div>
+          )}
+
+          {/* Distance */}
           <div style={styles.field}>
             <label
               style={styles.label}
-              htmlFor="pace-input"
+              htmlFor="distance-input"
             >
-              Pace ({paceUnit === 'mi' ? 'per mile' : 'per kilometer'})
+              Distance
             </label>
             <div style={styles.inline}>
               <input
-                id="pace-input"
-                inputMode="numeric"
-                placeholder="730 → 7:30"
-                value={paceStr}
-                onChange={(e) => handlePaceInput(e.target.value)}
+                id="distance-input"
+                inputMode="decimal"
+                placeholder="e.g., 5"
+                value={distanceStr}
+                onChange={(e) => setDistanceStr(e.target.value)}
                 style={{
                   ...styles.input,
-                  borderColor: paceError ? '#c0392b' : '#ccc',
+                  borderColor: distanceError ? '#c0392b' : '#ccc',
                 }}
               />
               <UnitToggle
-                value={paceUnit}
-                onChange={setPaceUnit}
-                idBase="pace"
+                value={distanceUnit}
+                onChange={setDistanceUnit}
+                idBase="distance"
               />
             </div>
             <div style={styles.help}>
-              Just type numbers: <code>730</code> → <code>7:30</code>,{' '}
-              <code>1045</code> → <code>10:45</code>
+              Examples: <code>5</code> (mi/km), <code>13.1</code>,{' '}
+              <code>10</code>.
             </div>
-          </div>
-        ) : (
-          <div style={styles.field}>
-            <label
-              style={styles.label}
-              htmlFor="goal-time-input"
-            >
-              Goal Time
-            </label>
-            <div style={styles.inline}>
-              <input
-                id="goal-time-input"
-                inputMode="numeric"
-                placeholder="31500 → 3:15:00"
-                value={goalTimeStr}
-                onChange={(e) => handleGoalTimeInput(e.target.value)}
-                style={{
-                  ...styles.input,
-                  borderColor: goalTimeError ? '#c0392b' : '#ccc',
-                }}
-              />
-            </div>
-            <div style={styles.help}>
-              Type numbers: <code>31500</code> → <code>3:15:00</code>,{' '}
-              <code>2530</code> → <code>25:30</code>
-            </div>
-          </div>
-        )}
-
-        {/* Distance */}
-        <div style={styles.field}>
-          <label
-            style={styles.label}
-            htmlFor="distance-input"
-          >
-            Distance
-          </label>
-          <div style={styles.inline}>
-            <input
-              id="distance-input"
-              inputMode="decimal"
-              placeholder="e.g., 5"
-              value={distanceStr}
-              onChange={(e) => setDistanceStr(e.target.value)}
-              style={{
-                ...styles.input,
-                borderColor: distanceError ? '#c0392b' : '#ccc',
-              }}
-            />
-            <UnitToggle
-              value={distanceUnit}
-              onChange={setDistanceUnit}
-              idBase="distance"
-            />
-          </div>
-          <div style={styles.help}>
-            Examples: <code>5</code> (mi/km), <code>13.1</code>, <code>10</code>
-            .
           </div>
         </div>
-      </div>
 
-      {/* Result */}
-      <div
-        style={styles.resultCard}
-        aria-live="polite"
-      >
-        <div style={styles.resultLabel}>
-          {calcMode === 'time' ? 'Total Time' : 'Target Pace'}
-        </div>
-        <div style={styles.resultValue}>
-          {calcMode === 'time'
-            ? totalSeconds == null
+        {/* Result */}
+        <div
+          style={styles.resultCard}
+          aria-live="polite"
+        >
+          <div style={styles.resultLabel}>
+            {calcMode === 'time' ? 'Total Time' : 'Target Pace'}
+          </div>
+          <div style={styles.resultValue}>
+            {calcMode === 'time'
+              ? totalSeconds == null
+                ? '—'
+                : formatHMS(totalSeconds)
+              : targetPaceSec == null
               ? '—'
-              : formatHMS(totalSeconds)
-            : targetPaceSec == null
-            ? '—'
-            : formatHMS(targetPaceSec)}
-        </div>
-        {paceError && calcMode === 'time' && (
-          <div style={styles.error}>Invalid pace. Try 7:30 or 7.5</div>
-        )}
-        {goalTimeError && calcMode === 'pace' && (
-          <div style={styles.error}>Invalid goal time. Try 3:15:00 or 195</div>
-        )}
-        {distanceError && (
-          <div style={styles.error}>
-            Invalid distance. Use a non-negative number.
+              : formatHMS(targetPaceSec)}
           </div>
-        )}
+          {paceError && calcMode === 'time' && (
+            <div style={styles.error}>Invalid pace. Try 7:30 or 7.5</div>
+          )}
+          {goalTimeError && calcMode === 'pace' && (
+            <div style={styles.error}>
+              Invalid goal time. Try 3:15:00 or 195
+            </div>
+          )}
+          {distanceError && (
+            <div style={styles.error}>
+              Invalid distance. Use a non-negative number.
+            </div>
+          )}
+        </div>
+        <Splits
+          paceSecondsPerUnit={calcMode === 'time' ? paceSec : targetPaceSec}
+          paceUnit={paceUnit}
+          totalDistance={Number.isFinite(distanceVal) ? distanceVal : 0}
+          distanceUnit={distanceUnit}
+          showSegmentTimes={false}
+        />
       </div>
-      <Splits
-        paceSecondsPerUnit={calcMode === 'time' ? paceSec : targetPaceSec}
-        paceUnit={paceUnit}
-        totalDistance={Number.isFinite(distanceVal) ? distanceVal : 0}
-        distanceUnit={distanceUnit}
-        showSegmentTimes={false}
-      />
     </div>
   )
 }
 
 // ---- Styles ----
 const styles: Record<string, React.CSSProperties> = {
-  page: {
+  appWrapper: {
     fontFamily:
       'Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif',
-    maxWidth: 820,
-    margin: '40px auto',
-    padding: '0 16px',
     lineHeight: 1.4,
+    width: '100%',
+    minHeight: '100vh',
+    boxSizing: 'border-box',
+    padding: '2rem',
+    textAlign: 'center',
+  },
+  lightTheme: {
+    '--text-primary': '#213547',
+    '--text-secondary': '#666666',
+    '--text-tertiary': '#666666',
+    '--text-muted': '#777777',
+    '--bg-card': '#fafafa',
+    '--bg-card-alt': '#ffffff',
+    '--bg-secondary': '#f0f0f0',
+    '--border-color': '#e5e5e5',
+    '--border-table': '#dddddd',
+    '--button-bg': 'transparent',
+    '--button-bg-active': '#ffffff',
+    '--button-text': '#666666',
+    '--button-text-active': '#213547',
+    color: '#213547',
+    backgroundColor: '#ffffff',
+  } as React.CSSProperties,
+  darkTheme: {
+    '--text-primary': 'rgba(255, 255, 255, 0.95)',
+    '--text-secondary': 'rgba(255, 255, 255, 0.7)',
+    '--text-tertiary': 'rgba(255, 255, 255, 0.6)',
+    '--text-muted': 'rgba(255, 255, 255, 0.5)',
+    '--bg-card': 'rgba(255, 255, 255, 0.05)',
+    '--bg-card-alt': 'rgba(255, 255, 255, 0.03)',
+    '--bg-secondary': 'rgba(255, 255, 255, 0.08)',
+    '--border-color': 'rgba(255, 255, 255, 0.1)',
+    '--border-table': 'rgba(255, 255, 255, 0.2)',
+    '--button-bg': 'transparent',
+    '--button-bg-active': 'rgba(255, 255, 255, 0.15)',
+    '--button-text': 'rgba(255, 255, 255, 0.8)',
+    '--button-text-active': 'rgba(255, 255, 255, 0.95)',
+    color: 'rgba(255, 255, 255, 0.87)',
+    backgroundColor: '#242424',
+  } as React.CSSProperties,
+  page: {
+    maxWidth: 820,
+    margin: '0 auto',
+    padding: '0 16px',
     width: '100%',
     boxSizing: 'border-box',
   },
   h1: {
     fontSize: '1.6rem',
     margin: '0 0 16px',
+    color: 'var(--text-primary)',
   },
   row: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
     gap: 16,
-    alignItems: 'end',
-    '@media (max-width: 640px)': {
-      gridTemplateColumns: '1fr',
-      gap: 12,
-    },
+    alignItems: 'start',
+    width: '100%',
+    minWidth: 0,
   },
   field: {
     display: 'flex',
@@ -344,11 +416,13 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '10px 12px',
     fontSize: '1rem',
     borderRadius: 8,
-    border: '1px solid #ccc',
+    border: '1px solid var(--border-color)',
     outline: 'none',
     minWidth: 0,
     width: '100%',
     boxSizing: 'border-box',
+    backgroundColor: 'var(--bg-card-alt)',
+    color: 'var(--text-primary)',
   },
   toggleGroup: {
     display: 'inline-flex',
@@ -364,7 +438,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   help: {
     fontSize: '.85rem',
-    color: '#666',
+    color: 'var(--text-muted)',
   },
   resultCard: {
     marginTop: 20,
@@ -391,6 +465,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   modeToggle: {
     display: 'flex',
+    flexDirection: 'row',
     gap: 2,
     padding: 2,
     backgroundColor: 'var(--bg-secondary)',
