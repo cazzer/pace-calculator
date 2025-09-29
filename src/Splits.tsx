@@ -872,7 +872,3 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 1,
   },
 }
-    lineHeight: 1.1,
-    marginTop: 1,
-  },
-}
