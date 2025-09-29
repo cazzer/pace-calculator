@@ -204,8 +204,31 @@ export function PresetOptions({
   }
 
   const handleGPXSuccess = () => {
-    // Use the same behavior as the Done button
-    handleDone()
+    // For GPX uploads, scroll to show the Pacing Strategy section
+    // Close all accordions first
+    setActivePaceSection(null)
+    setIsOpen(false)
+
+    setTimeout(() => {
+      // Try to find the Pacing Strategy section
+      const pacingSection = document.querySelector('h3:has-text("Pacing Strategy"), [data-pacing-strategy]')
+      if (pacingSection) {
+        pacingSection.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center', // Center the pacing strategy in viewport
+        })
+      } else {
+        // Fallback: scroll to result card but with more margin for mobile
+        const resultCard = document.querySelector('[data-result-card]')
+        if (resultCard) {
+          const isMobile = window.innerWidth <= 768
+          resultCard.scrollIntoView({
+            behavior: 'smooth',
+            block: isMobile ? 'end' : 'start', // On mobile, show more content above
+          })
+        }
+      }
+    }, 150) // Slightly longer delay for race selection
   }
 
   return (
@@ -372,7 +395,7 @@ export function PresetOptions({
 
             {/* Pacing Strategy Toggle - only show if race profile is selected */}
             {raceProfile && (
-              <div style={styles.presetSection}>
+              <div style={styles.presetSection} data-pacing-strategy>
                 <h3 style={styles.presetHeader}>Pacing Strategy</h3>
                 <div style={styles.pacingStrategyToggle}>
                   <button

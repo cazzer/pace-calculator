@@ -28,6 +28,22 @@ export function RacePresetsSection({
     setGpxError(error)
   }
 
+  const handleRacePreset = (race: RaceProfile) => {
+    onRacePreset(race)
+
+    // Small delay then scroll to show pacing strategy
+    setTimeout(() => {
+      const pacingSection = document.querySelector('[data-pacing-strategy]')
+      if (pacingSection) {
+        const isMobile = window.innerWidth <= 768
+        pacingSection.scrollIntoView({
+          behavior: 'smooth',
+          block: isMobile ? 'center' : 'start',
+        })
+      }
+    }, 100)
+  }
+
   return (
     <div style={styles.presetSection}>
       <h3 style={styles.presetHeader}>Race Presets</h3>
@@ -53,7 +69,7 @@ export function RacePresetsSection({
                 ...styles.racePresetButton,
                 ...(isSelected ? styles.racePresetButtonActive : {}),
               }}
-              onClick={() => onRacePreset(race)}
+              onClick={() => handleRacePreset(race)}
             >
               <div style={styles.racePresetLayout}>
                 <div style={styles.racePresetLeft}>
