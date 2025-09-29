@@ -211,7 +211,9 @@ export function PresetOptions({
 
     setTimeout(() => {
       // Try to find the Pacing Strategy section
-      const pacingSection = document.querySelector('h3:has-text("Pacing Strategy"), [data-pacing-strategy]')
+      const pacingSection = document.querySelector(
+        'h3:has-text("Pacing Strategy"), [data-pacing-strategy]'
+      )
       if (pacingSection) {
         pacingSection.scrollIntoView({
           behavior: 'smooth',
@@ -395,7 +397,10 @@ export function PresetOptions({
 
             {/* Pacing Strategy Toggle - only show if race profile is selected */}
             {raceProfile && (
-              <div style={styles.presetSection} data-pacing-strategy>
+              <div
+                style={styles.presetSection}
+                data-pacing-strategy
+              >
                 <h3 style={styles.presetHeader}>Pacing Strategy</h3>
                 <div style={styles.pacingStrategyToggle}>
                   <button
