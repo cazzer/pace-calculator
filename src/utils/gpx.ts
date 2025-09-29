@@ -35,15 +35,7 @@ function calculateDistance(
       Math.sin(dLon / 2)
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  const distance = R * c
-
-  // Filter out unrealistic distances (likely GPS noise)
-  // Skip points that are more than 0.1 miles from previous point
-  if (distance > 0.1) {
-    return 0
-  }
-
-  return distance
+  return R * c
 }
 
 function toRadians(degrees: number): number {
@@ -81,7 +73,6 @@ export function parseGPXFile(gpxContent: string): Promise<GPXData> {
       let totalElevationGain = 0
       let totalElevationLoss = 0
       let previousElevation: number | null = null
-      let lastValidPoint: { lat: number; lon: number } | null = null
 
       trackPoints.forEach((point, index) => {
         const lat = parseFloat(point.getAttribute('lat') || '0')
@@ -101,31 +92,25 @@ export function parseGPXFile(gpxContent: string): Promise<GPXData> {
           return // Skip invalid points
         }
 
-        // Calculate distance from previous valid point
-        if (lastValidPoint) {
+        // Calculate distance from previous point
+        if (index > 0 && points.length > 0) {
+          const prevPoint = points[points.length - 1]
           const distance = calculateDistance(
-            lastValidPoint.lat,
-            lastValidPoint.lon,
+            prevPoint.latitude,
+            prevPoint.longitude,
             lat,
             lon
           )
-
-          // Only add distance if it's reasonable (filters out GPS noise)
-          if (distance > 0 && distance <= 0.1) {
-            cumulativeDistance += distance
-          }
+          cumulativeDistance += distance
         }
 
         // Calculate elevation gain/loss
         if (previousElevation !== null && !isNaN(elevation)) {
           const elevationDiff = elevation - previousElevation
-          if (Math.abs(elevationDiff) < 500) {
-            // Filter out unrealistic elevation jumps
-            if (elevationDiff > 0) {
-              totalElevationGain += elevationDiff
-            } else {
-              totalElevationLoss += Math.abs(elevationDiff)
-            }
+          if (elevationDiff > 0) {
+            totalElevationGain += elevationDiff
+          } else {
+            totalElevationLoss += Math.abs(elevationDiff)
           }
         }
 
@@ -136,7 +121,6 @@ export function parseGPXFile(gpxContent: string): Promise<GPXData> {
           distance: cumulativeDistance,
         })
 
-        lastValidPoint = { lat, lon }
         previousElevation = isNaN(elevation) ? previousElevation : elevation
       })
 
