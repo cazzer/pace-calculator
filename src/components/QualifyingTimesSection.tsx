@@ -1,5 +1,5 @@
 import React from 'react'
-import { formatHMS } from '../utils'
+import { formatHMS } from '../utils/common'
 
 interface QualifyingTimesSectionProps {
   onPacePreset: (paceSeconds: number, category: string) => void

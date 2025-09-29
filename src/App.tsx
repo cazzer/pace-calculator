@@ -1,11 +1,15 @@
 import React from 'react'
 import { Unit } from './types'
-import { Splits } from './Splits'
-import { PresetOptions } from './PresetOptions'
+import { Splits } from './components/Splits'
+import { PresetOptions } from './components/PresetOptions'
 import { CalculationModeToggle } from './components/CalculationModeToggle'
 import { InputSection } from './components/InputSection'
 import { ResultCard } from './components/ResultCard'
-import { parsePaceToSeconds, formatHMS, convertDistanceTo } from './utils'
+import {
+  parsePaceToSeconds,
+  formatHMS,
+  convertDistanceTo,
+} from './utils/common'
 import { RaceProfile, RACE_PROFILES } from './elevation'
 import { useLocation } from 'wouter'
 import { parseUrlParams, serializeUrlParams, AppState } from './hashRouter'
@@ -396,6 +400,7 @@ export default function App() {
           raceProfile={raceProfile}
           pacingStrategy={pacingStrategy}
           onPacingStrategyChange={setPacingStrategy}
+          calcMode={calcMode}
         />
 
         <Splits

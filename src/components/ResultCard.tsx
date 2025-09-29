@@ -1,6 +1,6 @@
 import React from 'react'
 import { Unit } from '../types'
-import { formatHMS } from '../utils'
+import { formatHMS } from '../utils/common'
 
 interface ResultCardProps {
   calcMode: 'time' | 'pace'

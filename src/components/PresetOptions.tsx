@@ -1,13 +1,13 @@
 import React from 'react'
-import { Unit } from './types'
+import { Unit } from '../types'
 import {
   RACE_PROFILES,
   RaceProfile,
   generateElevationSparkline,
-} from './elevation'
-import { parseUrlParams } from './hashRouter'
-import { QualifyingTimesSection } from './components/QualifyingTimesSection'
-import { RacePresetsSection } from './components/RacePresetsSection'
+} from '../elevation'
+import { parseUrlParams } from '../hashRouter'
+import { QualifyingTimesSection } from './QualifyingTimesSection'
+import { RacePresetsSection } from './RacePresetsSection'
 
 interface PresetOptionsProps {
   onPacePreset: (paceSeconds: number, corral: string) => void
@@ -21,6 +21,7 @@ interface PresetOptionsProps {
   raceProfile: RaceProfile | null
   pacingStrategy: 'even-pace' | 'even-effort'
   onPacingStrategyChange: (strategy: 'even-pace' | 'even-effort') => void
+  calcMode: 'time' | 'pace' // Add this prop
 }
 
 export function PresetOptions({
@@ -28,13 +29,11 @@ export function PresetOptions({
   onDistancePreset,
   onRacePreset,
   onClearRace,
-  currentDistance,
-  currentDistanceUnit,
   paceUnit,
-  currentPaceSeconds,
   raceProfile,
   pacingStrategy,
   onPacingStrategyChange,
+  calcMode, // Add this parameter
 }: PresetOptionsProps) {
   const [isOpen, setIsOpen] = React.useState(false)
   const [activePaceSection, setActivePaceSection] = React.useState<
@@ -395,13 +394,13 @@ export function PresetOptions({
               </div>
             </div>
 
-            {/* Pacing Strategy Toggle - only show if race profile is selected */}
-            {raceProfile && (
-              <div
-                style={styles.presetSection}
-                data-pacing-strategy
-              >
-                <h3 style={styles.presetHeader}>Pacing Strategy</h3>
+            {/* Pacing Strategy Toggle - show if race profile or GPX data and not in pace calc mode */}
+            <div
+              style={styles.presetSection}
+              data-pacing-strategy
+            >
+              <h3 style={styles.presetHeader}>Pacing Strategy</h3>
+              {raceProfile && calcMode == 'pace' ? (
                 <div style={styles.pacingStrategyToggle}>
                   <button
                     style={{
@@ -432,36 +431,41 @@ export function PresetOptions({
                     </div>
                   </button>
                 </div>
+              ) : (
+                <div style={styles.disabledNote}>
+                  Pacing strategy is only available when using a Goal Time for
+                  Race Presets or GPX files.
+                </div>
+              )}
 
-                {pacingStrategy === 'even-effort' && (
-                  <div style={styles.gapNote}>
-                    <strong>About Grade Adjusted Pace:</strong> Our calculations
-                    are based on metabolic cost research showing ~3% pace
-                    adjustment per 1% uphill grade and ~2% per 1% downhill
-                    grade. This approach helps maintain consistent physiological
-                    effort across elevation changes. Learn more about{' '}
-                    <a
-                      href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6024138/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={styles.link}
-                    >
-                      running energetics research
-                    </a>{' '}
-                    and{' '}
-                    <a
-                      href="https://medium.com/strava-engineering/an-improved-gap-model-8b07ae8886c3"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={styles.link}
-                    >
-                      Strava's GAP approach
-                    </a>
-                    .
-                  </div>
-                )}
-              </div>
-            )}
+              {pacingStrategy === 'even-effort' && calcMode !== 'pace' && (
+                <div style={styles.gapNote}>
+                  <strong>About Grade Adjusted Pace:</strong> Our calculations
+                  are based on metabolic cost research showing ~3% pace
+                  adjustment per 1% uphill grade and ~2% per 1% downhill grade.
+                  This approach helps maintain consistent physiological effort
+                  across elevation changes. Learn more about{' '}
+                  <a
+                    href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6024138/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={styles.link}
+                  >
+                    running energetics research
+                  </a>{' '}
+                  and{' '}
+                  <a
+                    href="https://medium.com/strava-engineering/an-improved-gap-model-8b07ae8886c3"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={styles.link}
+                  >
+                    Strava's GAP approach
+                  </a>
+                  .
+                </div>
+              )}
+            </div>
 
             {/* Race Presets */}
             <RacePresetsSection
@@ -476,7 +480,7 @@ export function PresetOptions({
                 style={styles.doneButton}
                 onClick={handleDone}
               >
-                Done
+                Close Options
               </button>
             </div>
           </div>
@@ -703,11 +707,34 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-primary)',
     fontWeight: 'normal',
   },
+  pacingStrategyButtonDisabled: {
+    padding: '12px 16px',
+    border: '1px solid var(--border-color)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    color: 'rgba(255, 255, 255, 0.3)',
+    cursor: 'not-allowed',
+    textAlign: 'left',
+    fontSize: '0.9rem',
+    opacity: 0.5,
+  },
   pacingStrategyDescription: {
     fontSize: '0.75rem',
     color: 'var(--text-muted)',
     marginTop: 4,
     fontWeight: 'normal',
+  },
+  disabledNote: {
+    marginTop: 12,
+    padding: '12px 16px',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 8,
+    fontSize: '0.85rem',
+    color: 'var(--text-secondary)',
+    fontStyle: 'italic',
+    lineHeight: 1.4,
+    border: '1px solid rgba(255, 255, 255, 0.1)',
   },
   stickyButtonContainer: {
     position: 'sticky',
@@ -724,7 +751,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderColor: 'var(--border-color)',
     borderWidth: 1,
     borderStyle: 'solid',
-    color: 'white',
+    color: 'var(--text-primary)',
     borderRadius: 10,
     fontSize: '0.9rem',
     fontWeight: 500,
