@@ -72,18 +72,23 @@ export function calculateGradeStats(
   profile: ElevationPoint[],
   startDistance: number,
   endDistance: number
-): { weightedAvg: number; min: number; max: number } {
+): { weightedAvg: number; min: number; max: number; totalWeight: number } {
   const relevantPoints = profile.filter(
     (p) => p.distance >= startDistance && p.distance <= endDistance
   )
 
   if (relevantPoints.length < 2) {
     const avg = getAverageGrade(profile, startDistance, endDistance)
-    return { weightedAvg: avg, min: avg, max: avg }
+    // For single point segments, calculate weight based on average grade
+    const gradeDecimal = avg / 100
+    const weight =
+      minetti2002CostOfRunning(gradeDecimal) * (endDistance - startDistance)
+    return { weightedAvg: avg, min: avg, max: avg, totalWeight: weight }
   }
 
   let totalWeightedGrade = 0
   let totalDistance = 0
+  let totalWeight = 0
   const grades: number[] = []
 
   for (let i = 0; i < relevantPoints.length - 1; i++) {
@@ -95,6 +100,11 @@ export function calculateGradeStats(
     totalWeightedGrade += segmentGrade * segmentDistance
     totalDistance += segmentDistance
     grades.push(segmentGrade)
+
+    // Calculate metabolic cost weight for this subsegment
+    const gradeDecimal = segmentGrade / 100
+    const metabolicCost = minetti2002CostOfRunning(gradeDecimal)
+    totalWeight += metabolicCost * segmentDistance
   }
 
   const weightedAvg = totalDistance > 0 ? totalWeightedGrade / totalDistance : 0
@@ -103,6 +113,25 @@ export function calculateGradeStats(
     weightedAvg,
     min: Math.min(...grades),
     max: Math.max(...grades),
+    totalWeight,
+  }
+}
+
+// Helper function for Minetti 2002 metabolic cost calculation
+export function minetti2002CostOfRunning(grade: number): number {
+  // Constants for the formula
+  const Cr_level = 3.4 // Base cost on level ground
+
+  if (grade > 0) {
+    // Formula for uphill running (positive grade)
+    return Cr_level + 18.9 * grade + 30.4 * Math.pow(grade, 2)
+  } else if (grade < 0) {
+    // Formula for downhill running (negative grade)
+    // Note: for negative grades, the linear term should REDUCE cost
+    return Cr_level + 7.85 * grade + 0.3 * Math.pow(grade, 2)
+  } else {
+    // Formula for level running (grade = 0)
+    return Cr_level
   }
 }
 

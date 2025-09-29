@@ -8,6 +8,7 @@ import {
   SYDNEY_MARATHON_ELEVATION,
   UNITED_NYC_HALF_ELEVATION,
 } from './assets/elevationData'
+import { minetti2002CostOfRunning } from './utils/common'
 
 export interface ElevationPoint {
   distance: number // in miles
@@ -127,57 +128,47 @@ export function getElevationAtDistance(
   return profile[0].elevation
 }
 
-// Calculate Grade Adjusted Pace (GAP) using Strava's algorithm
-// Based on research: ~2% pace adjustment per 1% grade for uphill, ~1% for downhill
+// Calculate Grade Adjusted Pace (GAP) using Minetti 2002 research
+// Based on metabolic cost of running at different grades
 export function calculateGradeAdjustedPace(
   basePaceSeconds: number,
   gradePercent: number
 ): number {
   if (Math.abs(gradePercent) < 0.1) return basePaceSeconds // Flat terrain
 
-  let adjustmentFactor: number
+  // Convert percentage to decimal for Minetti formula
+  const gradeDecimal = gradePercent / 100
 
-  if (gradePercent > 0) {
-    // Uphill: more significant impact
-    // Exponential curve for steeper grades
-    adjustmentFactor =
-      1 +
-      gradePercent * 0.033 +
-      Math.pow(Math.max(0, gradePercent - 3), 1.3) * 0.003
-  } else {
-    // Downhill: less impact, with diminishing returns on steep descents
-    const absGrade = Math.abs(gradePercent)
-    adjustmentFactor =
-      1 - absGrade * 0.018 + Math.pow(Math.max(0, absGrade - 5), 1.2) * 0.002
-  }
+  // Get metabolic costs
+  const levelCost = minetti2002CostOfRunning(0)
+  const gradeCost = minetti2002CostOfRunning(gradeDecimal)
+
+  // Adjustment factor based on relative metabolic cost
+  const adjustmentFactor = gradeCost / levelCost
 
   return basePaceSeconds * adjustmentFactor
 }
 
 // Calculate what actual pace is needed to achieve a target Grade Adjusted Pace
-// This is the inverse of calculateGradeAdjustedPace
+// This is the inverse of calculateGradeAdjustedPace using Minetti 2002
 export function calculateActualPaceForTargetGAP(
   targetGAPSeconds: number,
   gradePercent: number
 ): number {
   if (Math.abs(gradePercent) < 0.1) return targetGAPSeconds // Flat terrain
 
-  let adjustmentFactor: number
+  // Convert percentage to decimal for Minetti formula
+  const gradeDecimal = gradePercent / 100
 
-  if (gradePercent > 0) {
-    // Uphill: more significant impact
-    adjustmentFactor =
-      1 +
-      gradePercent * 0.033 +
-      Math.pow(Math.max(0, gradePercent - 3), 1.3) * 0.003
-  } else {
-    // Downhill: less impact, with diminishing returns on steep descents
-    const absGrade = Math.abs(gradePercent)
-    adjustmentFactor =
-      1 - absGrade * 0.018 + Math.pow(Math.max(0, absGrade - 5), 1.2) * 0.002
-  }
+  // Get metabolic costs
+  const levelCost = minetti2002CostOfRunning(0)
+  const gradeCost = minetti2002CostOfRunning(gradeDecimal)
 
-  return targetGAPSeconds * adjustmentFactor
+  // Adjustment factor based on relative metabolic cost
+  const adjustmentFactor = gradeCost / levelCost
+
+  // To maintain the same effort (GAP), we need to adjust the actual pace inversely
+  return targetGAPSeconds / adjustmentFactor
 }
 
 // Get average grade for a distance segment

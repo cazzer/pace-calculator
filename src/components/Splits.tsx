@@ -14,6 +14,7 @@ export function Splits({
   showSegmentTimes = false,
   raceProfile = null,
   pacingStrategy = 'even-pace',
+  calcMode,
 }: SplitsProps) {
   if (
     paceSecondsPerUnit == null ||
@@ -38,6 +39,7 @@ export function Splits({
     paceSecondsPerUnit,
     raceProfile,
     pacingStrategy,
+    isGoalTimeMode: calcMode == 'pace',
   })
 
   // Filter to primary distance markers only for pace band

@@ -1,10 +1,6 @@
 import React from 'react'
 import { Unit } from '../types'
-import {
-  RACE_PROFILES,
-  RaceProfile,
-  generateElevationSparkline,
-} from '../elevation'
+import { RACE_PROFILES, RaceProfile } from '../elevation'
 import { hidePacingStrategy } from '../config'
 import { parseUrlParams } from '../hashRouter'
 import { QualifyingTimesSection } from './QualifyingTimesSection'
@@ -396,7 +392,7 @@ export function PresetOptions({
             </div>
 
             {/* Pacing Strategy Toggle - show if race profile or GPX data and not in pace calc mode */}
-            {hidePacingStrategy && (
+            {!hidePacingStrategy && (
               <div
                 style={styles.presetSection}
                 data-pacing-strategy

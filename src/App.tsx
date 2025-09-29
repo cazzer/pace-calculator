@@ -35,7 +35,7 @@ export default function App() {
 
   // Calculation mode
   const [calcMode, setCalcMode] = React.useState<'time' | 'pace'>(
-    initialUrlState.mode || 'time'
+    initialUrlState.mode || 'pace'
   )
 
   // Pace (string to allow "mm:ss")
@@ -411,6 +411,7 @@ export default function App() {
           showSegmentTimes={false}
           raceProfile={raceProfile}
           pacingStrategy={pacingStrategy}
+          calcMode={calcMode}
         />
 
         {/* Footer with GitHub link */}

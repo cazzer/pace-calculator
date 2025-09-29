@@ -34,6 +34,7 @@ interface ElevationEnhancedSplit extends SplitRow {
   gradeRange: ReturnType<typeof calculateGradeStats> | null
   distanceInMiles: number
   prevDistanceInMiles: number
+  calculatedPace?: number // Store the pace calculated during even-effort timing
 }
 
 interface BuildSplitsOptions {
@@ -236,105 +237,96 @@ function addElevationData(
   })
 }
 
-function adjustTimingForEvenEffort(
-  elevationSplits: ElevationEnhancedSplit[],
-  totalDistance: number,
-  distanceUnit: 'mi' | 'km',
-  paceUnit: 'mi' | 'km',
+function addEvenEffortTargetPaces(
+  splits: ElevationEnhancedSplit[],
   paceSecondsPerUnit: number,
-  raceProfile: RaceProfile
-): ElevationEnhancedSplit[] {
-  // Calculate weighted average adjustment factor
-  let totalWeightedAdjustment = 0
-  let totalSegmentDistance = 0
-
-  for (const split of elevationSplits) {
-    if (!split.gradeRange) continue
-
-    const adjustmentFactor =
-      calculateActualPaceForTargetGAP(
-        paceSecondsPerUnit,
-        split.gradeRange.weightedAvg
-      ) / paceSecondsPerUnit
-
-    const segmentDistanceInMiles =
-      split.distanceInMiles - split.prevDistanceInMiles
-    totalWeightedAdjustment += adjustmentFactor * segmentDistanceInMiles
-    totalSegmentDistance += segmentDistanceInMiles
+  paceUnit: 'mi' | 'km',
+  totalDistance: number,
+  distanceUnit: 'mi' | 'km'
+): EnhancedSplit[] {
+  // Calculate total metabolic cost weight for all segments
+  let totalWeight = 0
+  for (const split of splits) {
+    if (split.gradeRange) {
+      totalWeight += split.gradeRange.totalWeight
+    }
   }
 
-  const avgAdjustmentFactor = totalWeightedAdjustment / totalSegmentDistance
-  const correctedPace = paceSecondsPerUnit / avgAdjustmentFactor
+  // Calculate target total time and time per unit weight
+  const targetTotalDistanceInPaceUnit = convertDistanceTo(
+    paceUnit,
+    totalDistance,
+    distanceUnit
+  )
+  const targetTotalTime = targetTotalDistanceInPaceUnit * paceSecondsPerUnit
+  const timePerUnitWeight =
+    totalWeight > 0 ? targetTotalTime / totalWeight : paceSecondsPerUnit
 
-  // Recalculate timing with even-effort pacing
+  // Recalculate timing and paces with even-effort distribution
   let cumulativeTime = 0
 
-  return elevationSplits.map((split) => {
+  return splits.map((split) => {
     const segmentDistanceInMiles =
       split.distanceInMiles - split.prevDistanceInMiles
+    let targetPace: number
+    let newCumulativeSeconds: number
+    let newSegmentSeconds: number
 
     if (segmentDistanceInMiles > 0 && split.gradeRange) {
-      const segmentPace = calculateActualPaceForTargetGAP(
-        correctedPace,
-        split.gradeRange.weightedAvg
-      )
+      // Calculate segment time based on metabolic cost weight
+      newSegmentSeconds = split.gradeRange.totalWeight * timePerUnitWeight
 
+      // Calculate the actual pace for this segment
       const segmentDistanceInPaceUnit = convertDistanceTo(
         paceUnit,
         segmentDistanceInMiles,
         'mi'
       )
-      const segmentTime = segmentDistanceInPaceUnit * segmentPace
+      targetPace =
+        segmentDistanceInPaceUnit > 0
+          ? newSegmentSeconds / segmentDistanceInPaceUnit
+          : paceSecondsPerUnit
 
-      cumulativeTime += segmentTime
-
-      return {
-        ...split,
-        cumulativeSeconds: cumulativeTime,
-        segmentSeconds: segmentTime,
-      }
+      cumulativeTime += newSegmentSeconds
+      newCumulativeSeconds = cumulativeTime
     } else {
-      // For zero-distance segments (shouldn't happen), keep original timing
-      cumulativeTime += split.segmentSeconds
-      return split
+      // For zero-distance segments, keep original timing
+      newSegmentSeconds = split.segmentSeconds
+      newCumulativeSeconds = cumulativeTime + newSegmentSeconds
+      cumulativeTime = newCumulativeSeconds
+      targetPace = paceSecondsPerUnit
+    }
+
+    // Remove helper properties and return final split
+    const { distanceInMiles, prevDistanceInMiles, ...finalSplit } = split
+
+    return {
+      ...finalSplit,
+      cumulativeSeconds: newCumulativeSeconds,
+      segmentSeconds: newSegmentSeconds,
+      targetPace,
     }
   })
 }
 
-function addTargetPaces(
+function addEvenPaceTargetPaces(
   splits: ElevationEnhancedSplit[],
-  paceSecondsPerUnit: number,
-  paceUnit: 'mi' | 'km',
-  pacingStrategy: 'even-pace' | 'even-effort'
+  paceSecondsPerUnit: number
 ): EnhancedSplit[] {
+  // For even-pace or non-goal-time mode, just calculate target paces
   return splits.map((split) => {
     let targetPace: number
 
     if (split.gradeRange) {
-      if (pacingStrategy === 'even-pace') {
-        targetPace = calculateGradeAdjustedPace(
-          paceSecondsPerUnit,
-          split.gradeRange.weightedAvg
-        )
-      } else {
-        // For even-effort, calculate the actual pace from the segment timing
-        const segmentDistanceInMiles =
-          split.distanceInMiles - split.prevDistanceInMiles
-        const segmentDistanceInPaceUnit = convertDistanceTo(
-          paceUnit,
-          segmentDistanceInMiles,
-          'mi'
-        )
-        targetPace =
-          segmentDistanceInPaceUnit > 0
-            ? split.segmentSeconds / segmentDistanceInPaceUnit
-            : paceSecondsPerUnit
-      }
+      targetPace = calculateGradeAdjustedPace(
+        paceSecondsPerUnit,
+        split.gradeRange.weightedAvg
+      )
     } else {
       targetPace = paceSecondsPerUnit
     }
 
-    // Remove the helper properties from the final result
+    // Remove helper properties
     const { distanceInMiles, prevDistanceInMiles, ...finalSplit } = split
 
     return {
@@ -389,23 +381,16 @@ export function buildSplits({
   // First pass: add elevation data
   let elevationSplits = addElevationData(splitRows, raceProfile, paceUnit)
 
-  // Second pass: adjust timing if even-effort + goal time
+  // Final pass: add target paces (and adjust timing if needed)
   if (pacingStrategy === 'even-effort' && isGoalTimeMode) {
-    elevationSplits = adjustTimingForEvenEffort(
+    return addEvenEffortTargetPaces(
       elevationSplits,
-      totalDistance,
-      distanceUnit,
-      paceUnit,
       paceSecondsPerUnit,
-      raceProfile
+      paceUnit,
+      totalDistance,
+      distanceUnit
     )
+  } else {
+    return addEvenPaceTargetPaces(elevationSplits, paceSecondsPerUnit)
   }
-
-  // Final pass: add target paces
-  return addTargetPaces(
-    elevationSplits,
-    paceSecondsPerUnit,
-    paceUnit,
-    pacingStrategy
-  )
 }

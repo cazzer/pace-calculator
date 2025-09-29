@@ -20,6 +20,7 @@ export interface SplitsProps {
   raceProfile?: RaceProfile | null
   /** Optional: pacing strategy, either 'even-pace' or 'even-effort' */
   pacingStrategy?: 'even-pace' | 'even-effort'
+  calcMode: 'time' | 'pace'
 }
 
 export interface UnitToggleProps {
