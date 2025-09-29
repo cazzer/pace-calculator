@@ -5,6 +5,7 @@ import {
   RaceProfile,
   generateElevationSparkline,
 } from '../elevation'
+import { hidePacingStrategy } from '../config'
 import { parseUrlParams } from '../hashRouter'
 import { QualifyingTimesSection } from './QualifyingTimesSection'
 import { RacePresetsSection } from './RacePresetsSection'
@@ -395,78 +396,79 @@ export function PresetOptions({
             </div>
 
             {/* Pacing Strategy Toggle - show if race profile or GPX data and not in pace calc mode */}
-            <div
-              style={styles.presetSection}
-              data-pacing-strategy
-            >
-              <h3 style={styles.presetHeader}>Pacing Strategy</h3>
-              {raceProfile && calcMode == 'pace' ? (
-                <div style={styles.pacingStrategyToggle}>
-                  <button
-                    style={{
-                      ...styles.pacingStrategyButton,
-                      ...(pacingStrategy === 'even-pace'
-                        ? styles.pacingStrategyButtonActive
-                        : {}),
-                    }}
-                    onClick={() => onPacingStrategyChange('even-pace')}
-                  >
-                    Even Pace
-                    <div style={styles.pacingStrategyDescription}>
-                      Maintain constant pace, effort varies with terrain
-                    </div>
-                  </button>
-                  <button
-                    style={{
-                      ...styles.pacingStrategyButton,
-                      ...(pacingStrategy === 'even-effort'
-                        ? styles.pacingStrategyButtonActive
-                        : {}),
-                    }}
-                    onClick={() => onPacingStrategyChange('even-effort')}
-                  >
-                    Even Effort
-                    <div style={styles.pacingStrategyDescription}>
-                      Maintain constant effort, pace varies with terrain
-                    </div>
-                  </button>
-                </div>
-              ) : (
-                <div style={styles.disabledNote}>
-                  Pacing strategy is only available when using a Goal Time for
-                  Race Presets or GPX files.
-                </div>
-              )}
+            {hidePacingStrategy && (
+              <div
+                style={styles.presetSection}
+                data-pacing-strategy
+              >
+                <h3 style={styles.presetHeader}>Pacing Strategy</h3>
+                {raceProfile && calcMode == 'pace' ? (
+                  <div style={styles.pacingStrategyToggle}>
+                    <button
+                      style={{
+                        ...styles.pacingStrategyButton,
+                        ...(pacingStrategy === 'even-pace'
+                          ? styles.pacingStrategyButtonActive
+                          : {}),
+                      }}
+                      onClick={() => onPacingStrategyChange('even-pace')}
+                    >
+                      Even Pace
+                      <div style={styles.pacingStrategyDescription}>
+                        Maintain constant pace, effort varies with terrain
+                      </div>
+                    </button>
+                    <button
+                      style={{
+                        ...styles.pacingStrategyButton,
+                        ...(pacingStrategy === 'even-effort'
+                          ? styles.pacingStrategyButtonActive
+                          : {}),
+                      }}
+                      onClick={() => onPacingStrategyChange('even-effort')}
+                    >
+                      Even Effort
+                      <div style={styles.pacingStrategyDescription}>
+                        Maintain constant effort, pace varies with terrain
+                      </div>
+                    </button>
+                  </div>
+                ) : (
+                  <div style={styles.disabledNote}>
+                    Pacing strategy is only available when using a Goal Time for
+                    Race Presets or GPX files.
+                  </div>
+                )}
 
-              {pacingStrategy === 'even-effort' && calcMode !== 'pace' && (
-                <div style={styles.gapNote}>
-                  <strong>About Grade Adjusted Pace:</strong> Our calculations
-                  are based on metabolic cost research showing ~3% pace
-                  adjustment per 1% uphill grade and ~2% per 1% downhill grade.
-                  This approach helps maintain consistent physiological effort
-                  across elevation changes. Learn more about{' '}
-                  <a
-                    href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6024138/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={styles.link}
-                  >
-                    running energetics research
-                  </a>{' '}
-                  and{' '}
-                  <a
-                    href="https://medium.com/strava-engineering/an-improved-gap-model-8b07ae8886c3"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={styles.link}
-                  >
-                    Strava's GAP approach
-                  </a>
-                  .
-                </div>
-              )}
-            </div>
-
+                {pacingStrategy === 'even-effort' && calcMode !== 'pace' && (
+                  <div style={styles.gapNote}>
+                    <strong>About Grade Adjusted Pace:</strong> Our calculations
+                    are based on metabolic cost research showing ~3% pace
+                    adjustment per 1% uphill grade and ~2% per 1% downhill
+                    grade. This approach helps maintain consistent physiological
+                    effort across elevation changes. Learn more about{' '}
+                    <a
+                      href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6024138/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={styles.link}
+                    >
+                      running energetics research
+                    </a>{' '}
+                    and{' '}
+                    <a
+                      href="https://medium.com/strava-engineering/an-improved-gap-model-8b07ae8886c3"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={styles.link}
+                    >
+                      Strava's GAP approach
+                    </a>
+                    .
+                  </div>
+                )}
+              </div>
+            )}
             {/* Race Presets */}
             <RacePresetsSection
               onRacePreset={onRacePreset}

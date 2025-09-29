@@ -1,8 +1,9 @@
 import React from 'react'
 import { SplitsProps } from '../types'
-import { formatHMS } from '../utils/common'
+import { capitalCase, formatHMS } from '../utils/common'
 import { printPaceBand } from '../utils/printPaceBand'
 import { buildSplits } from '../utils/buildSplits'
+import { hidePacingStrategy } from '../config'
 
 // ---- Component ----
 export function Splits({
@@ -85,9 +86,11 @@ export function Splits({
           Pace: {paceUnit === 'mi' ? 'per mile' : 'per kilometer'} · Distance:{' '}
           {distanceUnit.toUpperCase()}
         </div>
-        {raceProfile && (
+        {raceProfile && !hidePacingStrategy && (
           <div style={styles.elevationBadgeLine}>
-            <span style={styles.elevationBadge}>📈 Elevation Profile</span>
+            <span style={styles.elevationBadge}>
+              {capitalCase(pacingStrategy)}
+            </span>
           </div>
         )}
       </div>

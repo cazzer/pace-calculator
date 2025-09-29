@@ -1,6 +1,6 @@
 import React from 'react'
 import { Unit } from '../types'
-import { UnitToggle } from '../UnitToggle'
+import { UnitToggle } from './UnitToggle'
 
 interface InputSectionProps {
   calcMode: 'time' | 'pace'

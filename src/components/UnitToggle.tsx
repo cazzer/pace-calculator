@@ -1,5 +1,5 @@
 import React from 'react'
-import { UnitToggleProps } from './types'
+import { UnitToggleProps } from '../types'
 
 // ---- UI Component ----
 export function UnitToggle(props: UnitToggleProps) {

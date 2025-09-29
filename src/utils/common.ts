@@ -105,3 +105,10 @@ export function calculateGradeStats(
     max: Math.max(...grades),
   }
 }
+
+export function capitalCase(s: string): string {
+  return s
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim()
+}

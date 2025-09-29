@@ -27,6 +27,15 @@ export interface EnhancedSplit extends SplitRow {
   gradeRange: ReturnType<typeof calculateGradeStats> | null
 }
 
+// New interface for splits with elevation data but no target pace yet
+interface ElevationEnhancedSplit extends SplitRow {
+  elevation: number | null
+  grade: number | null
+  gradeRange: ReturnType<typeof calculateGradeStats> | null
+  distanceInMiles: number
+  prevDistanceInMiles: number
+}
+
 interface BuildSplitsOptions {
   totalDistance: number
   distanceUnit: 'mi' | 'km'
@@ -34,6 +43,7 @@ interface BuildSplitsOptions {
   paceSecondsPerUnit: number
   raceProfile?: RaceProfile | null
   pacingStrategy?: 'even-pace' | 'even-effort'
+  isGoalTimeMode?: boolean // Add this to identify when we're calculating pace from time
 }
 
 export function buildSplitMarkers(
@@ -171,37 +181,23 @@ export function calculateSplitTimes(
   return rows
 }
 
-export function enhanceWithElevation(
+function addElevationData(
   splits: SplitRow[],
-  raceProfile: RaceProfile | null,
-  paceUnit: 'mi' | 'km',
-  paceSecondsPerUnit: number,
-  pacingStrategy: 'even-pace' | 'even-effort'
-): EnhancedSplit[] {
+  raceProfile: RaceProfile,
+  paceUnit: 'mi' | 'km'
+): ElevationEnhancedSplit[] {
   return splits.map((split, index) => {
-    if (!raceProfile) {
-      return {
-        ...split,
-        elevation: null,
-        grade: null,
-        targetPace: null,
-        gradeRange: null,
-      }
-    }
-
     // Convert split distance to profile units (miles)
-    let distanceInMiles: number
     const distanceMatch = split.distanceLabel.match(/([\d.]+)\s*(mi|km)/)
+    let distanceInMiles: number
 
     if (distanceMatch) {
       const distanceValue = parseFloat(distanceMatch[1])
       const unit = distanceMatch[2]
       distanceInMiles = unit === 'mi' ? distanceValue : distanceValue / 1.609344
     } else {
-      // Fallback: calculate from pace and time
-      const distanceInPaceUnits = split.cumulativeSeconds / paceSecondsPerUnit
-      distanceInMiles =
-        paceUnit === 'mi' ? distanceInPaceUnits : distanceInPaceUnits / 1.609344
+      // This shouldn't happen with our current setup, but fallback just in case
+      distanceInMiles = 0
     }
 
     // Get previous distance for grade calculation
@@ -216,13 +212,6 @@ export function enhanceWithElevation(
         const prevUnit = prevDistanceMatch[2]
         prevDistanceInMiles =
           prevUnit === 'mi' ? prevDistanceValue : prevDistanceValue / 1.609344
-      } else {
-        const prevDistanceInPaceUnits =
-          prevSplit.cumulativeSeconds / paceSecondsPerUnit
-        prevDistanceInMiles =
-          paceUnit === 'mi'
-            ? prevDistanceInPaceUnits
-            : prevDistanceInPaceUnits / 1.609344
       }
     }
 
@@ -236,28 +225,121 @@ export function enhanceWithElevation(
       distanceInMiles
     )
 
-    // Calculate target pace based on pacing strategy
-    let targetPace: number
-    if (pacingStrategy === 'even-pace') {
-      // Show what the pace will feel like (GAP)
-      targetPace = calculateGradeAdjustedPace(
-        paceSecondsPerUnit,
-        gradeStats.weightedAvg
-      )
-    } else {
-      // Show what actual pace to run for consistent effort
-      targetPace = calculateActualPaceForTargetGAP(
-        paceSecondsPerUnit,
-        gradeStats.weightedAvg
-      )
-    }
-
     return {
       ...split,
       elevation: Math.round(elevation),
       grade: Math.round(gradeStats.weightedAvg * 10) / 10,
-      targetPace,
       gradeRange: gradeStats,
+      distanceInMiles,
+      prevDistanceInMiles,
+    }
+  })
+}
+
+function adjustTimingForEvenEffort(
+  elevationSplits: ElevationEnhancedSplit[],
+  totalDistance: number,
+  distanceUnit: 'mi' | 'km',
+  paceUnit: 'mi' | 'km',
+  paceSecondsPerUnit: number,
+  raceProfile: RaceProfile
+): ElevationEnhancedSplit[] {
+  // Calculate weighted average adjustment factor
+  let totalWeightedAdjustment = 0
+  let totalSegmentDistance = 0
+
+  for (const split of elevationSplits) {
+    if (!split.gradeRange) continue
+
+    const adjustmentFactor =
+      calculateActualPaceForTargetGAP(
+        paceSecondsPerUnit,
+        split.gradeRange.weightedAvg
+      ) / paceSecondsPerUnit
+
+    const segmentDistanceInMiles =
+      split.distanceInMiles - split.prevDistanceInMiles
+    totalWeightedAdjustment += adjustmentFactor * segmentDistanceInMiles
+    totalSegmentDistance += segmentDistanceInMiles
+  }
+
+  const avgAdjustmentFactor = totalWeightedAdjustment / totalSegmentDistance
+  const correctedPace = paceSecondsPerUnit / avgAdjustmentFactor
+
+  // Recalculate timing with even-effort pacing
+  let cumulativeTime = 0
+
+  return elevationSplits.map((split) => {
+    const segmentDistanceInMiles =
+      split.distanceInMiles - split.prevDistanceInMiles
+
+    if (segmentDistanceInMiles > 0 && split.gradeRange) {
+      const segmentPace = calculateActualPaceForTargetGAP(
+        correctedPace,
+        split.gradeRange.weightedAvg
+      )
+
+      const segmentDistanceInPaceUnit = convertDistanceTo(
+        paceUnit,
+        segmentDistanceInMiles,
+        'mi'
+      )
+      const segmentTime = segmentDistanceInPaceUnit * segmentPace
+
+      cumulativeTime += segmentTime
+
+      return {
+        ...split,
+        cumulativeSeconds: cumulativeTime,
+        segmentSeconds: segmentTime,
+      }
+    } else {
+      // For zero-distance segments (shouldn't happen), keep original timing
+      cumulativeTime += split.segmentSeconds
+      return split
+    }
+  })
+}
+
+function addTargetPaces(
+  splits: ElevationEnhancedSplit[],
+  paceSecondsPerUnit: number,
+  paceUnit: 'mi' | 'km',
+  pacingStrategy: 'even-pace' | 'even-effort'
+): EnhancedSplit[] {
+  return splits.map((split) => {
+    let targetPace: number
+
+    if (split.gradeRange) {
+      if (pacingStrategy === 'even-pace') {
+        targetPace = calculateGradeAdjustedPace(
+          paceSecondsPerUnit,
+          split.gradeRange.weightedAvg
+        )
+      } else {
+        // For even-effort, calculate the actual pace from the segment timing
+        const segmentDistanceInMiles =
+          split.distanceInMiles - split.prevDistanceInMiles
+        const segmentDistanceInPaceUnit = convertDistanceTo(
+          paceUnit,
+          segmentDistanceInMiles,
+          'mi'
+        )
+        targetPace =
+          segmentDistanceInPaceUnit > 0
+            ? split.segmentSeconds / segmentDistanceInPaceUnit
+            : paceSecondsPerUnit
+      }
+    } else {
+      targetPace = paceSecondsPerUnit
+    }
+
+    // Remove the helper properties from the final result
+    const { distanceInMiles, prevDistanceInMiles, ...finalSplit } = split
+
+    return {
+      ...finalSplit,
+      targetPace,
     }
   })
 }
@@ -269,13 +351,34 @@ export function buildSplits({
   paceSecondsPerUnit,
   raceProfile = null,
   pacingStrategy = 'even-pace',
+  isGoalTimeMode = false,
 }: BuildSplitsOptions): EnhancedSplit[] {
-  // Build and deduplicate markers
+  // Early exit if no race profile
+  if (!raceProfile) {
+    const markers = buildSplitMarkers(totalDistance, distanceUnit)
+    const sortedMarkers = deduplicateMarkers(markers)
+    const splitRows = calculateSplitTimes(
+      sortedMarkers,
+      totalDistance,
+      distanceUnit,
+      paceUnit,
+      paceSecondsPerUnit
+    )
+
+    // Return basic splits with no elevation data
+    return splitRows.map((split) => ({
+      ...split,
+      elevation: null,
+      grade: null,
+      targetPace: paceSecondsPerUnit,
+      gradeRange: null,
+    }))
+  }
+
+  // Build basic split structure
   const markers = buildSplitMarkers(totalDistance, distanceUnit)
   const sortedMarkers = deduplicateMarkers(markers)
-
-  // Calculate times
-  const splitRows = calculateSplitTimes(
+  let splitRows = calculateSplitTimes(
     sortedMarkers,
     totalDistance,
     distanceUnit,
@@ -283,12 +386,26 @@ export function buildSplits({
     paceSecondsPerUnit
   )
 
-  // Enhance with elevation data if available
-  return enhanceWithElevation(
-    splitRows,
-    raceProfile,
-    paceUnit,
+  // First pass: add elevation data
+  let elevationSplits = addElevationData(splitRows, raceProfile, paceUnit)
+
+  // Second pass: adjust timing if even-effort + goal time
+  if (pacingStrategy === 'even-effort' && isGoalTimeMode) {
+    elevationSplits = adjustTimingForEvenEffort(
+      elevationSplits,
+      totalDistance,
+      distanceUnit,
+      paceUnit,
+      paceSecondsPerUnit,
+      raceProfile
+    )
+  }
+
+  // Final pass: add target paces
+  return addTargetPaces(
+    elevationSplits,
     paceSecondsPerUnit,
+    paceUnit,
     pacingStrategy
   )
 }
