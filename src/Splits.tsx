@@ -570,7 +570,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   td: {
     padding: '8px 6px',
-    verticalAlign: 'top',
+    verticalAlign: 'middle',
     color: 'var(--text-primary)',
   },
   tdMono: {
@@ -581,7 +581,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   tdItalic: {
     padding: '8px 6px',
-    verticalAlign: 'top',
+    verticalAlign: 'middle',
     fontStyle: 'italic',
     color: 'var(--text-secondary)',
   },

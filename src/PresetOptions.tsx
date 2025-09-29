@@ -203,6 +203,11 @@ export function PresetOptions({
     }, 100) // Small delay to allow accordion to close
   }
 
+  const handleGPXSuccess = () => {
+    // Use the same behavior as the Done button
+    handleDone()
+  }
+
   return (
     <div style={styles.moreOptionsSection}>
       <button
@@ -434,6 +439,7 @@ export function PresetOptions({
             <RacePresetsSection
               onRacePreset={onRacePreset}
               isRaceSelected={isRaceSelected}
+              onGPXSuccess={handleGPXSuccess}
             />
 
             {/* Sticky Done Button */}

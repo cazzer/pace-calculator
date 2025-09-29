@@ -4,16 +4,30 @@ import {
   RaceProfile,
   generateElevationSparkline,
 } from '../elevation'
+import { GPXUpload } from './GPXUpload'
 
 interface RacePresetsSectionProps {
   onRacePreset: (raceProfile: RaceProfile) => void
   isRaceSelected: (raceKey: string) => boolean
+  onGPXSuccess?: () => void // Add optional callback for GPX success
 }
 
 export function RacePresetsSection({
   onRacePreset,
   isRaceSelected,
+  onGPXSuccess,
 }: RacePresetsSectionProps) {
+  const [gpxError, setGpxError] = React.useState<string | null>(null)
+
+  const handleGPXLoaded = (profile: RaceProfile) => {
+    setGpxError(null)
+    onRacePreset(profile)
+  }
+
+  const handleGPXError = (error: string) => {
+    setGpxError(error)
+  }
+
   return (
     <div style={styles.presetSection}>
       <h3 style={styles.presetHeader}>Race Presets</h3>
@@ -21,6 +35,8 @@ export function RacePresetsSection({
         Note: Elevation data represents our best estimates and may not be
         perfectly accurate
       </div>
+
+      {/* Existing race presets */}
       <div style={styles.racePresets}>
         {Object.entries(RACE_PROFILES).map(([key, race]) => {
           const isSelected = isRaceSelected(key)
@@ -79,6 +95,14 @@ export function RacePresetsSection({
           )
         })}
       </div>
+      {/* GPX Upload Section */}
+      <GPXUpload
+        onGPXLoaded={handleGPXLoaded}
+        onError={handleGPXError}
+        onSuccess={onGPXSuccess}
+      />
+
+      {gpxError && <div style={styles.errorMessage}>{gpxError}</div>}
     </div>
   )
 }
@@ -171,5 +195,14 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'center',
     opacity: 0.7,
     fontStyle: 'italic',
+  },
+  errorMessage: {
+    padding: '12px',
+    backgroundColor: '#fef2f2',
+    border: '1px solid #fecaca',
+    borderRadius: 6,
+    color: '#dc2626',
+    fontSize: '0.85rem',
+    marginBottom: 16,
   },
 }

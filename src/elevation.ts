@@ -16,10 +16,13 @@ export interface ElevationPoint {
 
 export interface RaceProfile {
   name: string
-  distance: number // in miles
+  distance: number
   unit: 'mi' | 'km'
   elevationProfile: ElevationPoint[]
   logoUrl?: string
+  isCustom?: boolean
+  elevationGain?: number
+  elevationLoss?: number
 }
 
 export const RACE_PROFILES: Record<string, RaceProfile> = {
@@ -94,9 +97,12 @@ export function calculateGrade(
   point1: ElevationPoint,
   point2: ElevationPoint
 ): number {
-  const distanceFeet = (point2.distance - point1.distance) * 5280
-  const elevationChange = point2.elevation - point1.elevation
-  return distanceFeet > 0 ? (elevationChange / distanceFeet) * 100 : 0
+  const horizontalDistance = (point2.distance - point1.distance) * 5280 // Convert miles to feet
+  const elevationChange = point2.elevation - point1.elevation // Already in feet
+
+  if (horizontalDistance <= 0) return 0
+
+  return (elevationChange / horizontalDistance) * 100 // Convert to percentage
 }
 
 // Get elevation at a specific distance using linear interpolation
