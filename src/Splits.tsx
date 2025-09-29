@@ -770,10 +770,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '14px',
     color: 'var(--text-secondary)',
     transition: 'all 0.2s ease',
-    ':hover': {
-      backgroundColor: 'var(--bg-card)',
-      borderColor: 'var(--text-primary)',
-    },
   },
   meta: {
     color: 'var(--text-tertiary)',
@@ -872,6 +868,10 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.65rem',
     color: 'var(--text-muted)',
     fontStyle: 'italic',
+    lineHeight: 1.1,
+    marginTop: 1,
+  },
+}
     lineHeight: 1.1,
     marginTop: 1,
   },
