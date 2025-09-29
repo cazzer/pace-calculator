@@ -23,14 +23,6 @@ export interface RaceProfile {
 }
 
 export const RACE_PROFILES: Record<string, RaceProfile> = {
-  'berlin-marathon': {
-    name: 'Berlin Marathon',
-    distance: 26.2,
-    unit: 'mi',
-    elevationProfile: BERLIN_MARATHON_ELEVATION,
-    logoUrl:
-      'https://upload.wikimedia.org/wikipedia/en/thumb/6/66/BMW_Berlin_Marathon_logo.svg/2560px-BMW_Berlin_Marathon_logo.svg.png',
-  },
   'boston-marathon': {
     name: 'Boston Marathon',
     distance: 26.2,
@@ -38,47 +30,7 @@ export const RACE_PROFILES: Record<string, RaceProfile> = {
     elevationProfile: BOSTON_MARATHON_ELEVATION,
     logoUrl:
       'https://upload.wikimedia.org/wikipedia/en/0/0c/Boston_Marathon_logo_%28updated_2024%29.png?20250420000148',
-  },
-  'london-marathon': {
-    name: 'London Marathon',
-    distance: 26.2,
-    unit: 'mi',
-    elevationProfile: LONDON_MARATHON_ELEVATION,
-    logoUrl:
-      'https://upload.wikimedia.org/wikipedia/en/2/26/TCS_London_Marathon_logo.png',
-  },
-  'sydney-marathon': {
-    name: 'Sydney Marathon',
-    distance: 26.2,
-    unit: 'mi',
-    elevationProfile: SYDNEY_MARATHON_ELEVATION,
-    logoUrl:
-      'https://childrenofperu.org/wp-content/uploads/2024/11/tcs-sydney-logo.png',
-  },
-  'tokyo-marathon': {
-    name: 'Tokyo Marathon',
-    distance: 26.2,
-    unit: 'mi',
-    elevationProfile: TOKYO_MARATHON_ELEVATION,
-    logoUrl:
-      'https://upload.wikimedia.org/wikipedia/en/thumb/9/9f/Tokyo_Marathon_logo.svg/1280px-Tokyo_Marathon_logo.svg.png',
-  },
-  'nyc-marathon': {
-    name: 'NYC Marathon',
-    distance: 26.2,
-    unit: 'mi',
-    elevationProfile: NYC_MARATHON_ELEVATION,
-    logoUrl:
-      'https://prodsitecorehaku01-image.nyrr.org/nyrrsitecoreblob/nyrr/logo/homepage_mara_logo_nycm_horizontallogo_fc_rgb.png?width=400&height=400',
-  },
-  'chicago-marathon': {
-    name: 'Chicago Marathon',
-    distance: 26.2,
-    unit: 'mi',
-    elevationProfile: CHICAGO_MARATHON_ELEVATION,
-    logoUrl:
-      'https://www.chicagomarathon.com/wp-content/themes/cm/images/logo.svg?v=2',
-  },
+  }, // 1897 - oldest
   'united-nyc-half': {
     name: 'United NYC Half Marathon',
     distance: 13.1,
@@ -86,7 +38,55 @@ export const RACE_PROFILES: Record<string, RaceProfile> = {
     elevationProfile: UNITED_NYC_HALF_ELEVATION,
     logoUrl:
       'https://raceraves.com/wp-content/uploads/2022/09/uanych18_4p_primary_logo_nodate_rgb_full_color300x300.png',
-  },
+  }, // 1970s (as NYC Half)
+  'nyc-marathon': {
+    name: 'NYC Marathon',
+    distance: 26.2,
+    unit: 'mi',
+    elevationProfile: NYC_MARATHON_ELEVATION,
+    logoUrl:
+      'https://prodsitecorehaku01-image.nyrr.org/nyrrsitecoreblob/nyrr/logo/homepage_mara_logo_nycm_horizontallogo_fc_rgb.png?width=400&height=400',
+  }, // 1970
+  'chicago-marathon': {
+    name: 'Chicago Marathon',
+    distance: 26.2,
+    unit: 'mi',
+    elevationProfile: CHICAGO_MARATHON_ELEVATION,
+    logoUrl:
+      'https://www.chicagomarathon.com/wp-content/themes/cm/images/logo.svg?v=2',
+  }, // 1977
+  'london-marathon': {
+    name: 'London Marathon',
+    distance: 26.2,
+    unit: 'mi',
+    elevationProfile: LONDON_MARATHON_ELEVATION,
+    logoUrl:
+      'https://upload.wikimedia.org/wikipedia/en/2/26/TCS_London_Marathon_logo.png',
+  }, // 1981
+  'berlin-marathon': {
+    name: 'Berlin Marathon',
+    distance: 26.2,
+    unit: 'mi',
+    elevationProfile: BERLIN_MARATHON_ELEVATION,
+    logoUrl:
+      'https://upload.wikimedia.org/wikipedia/en/thumb/6/66/BMW_Berlin_Marathon_logo.svg/2560px-BMW_Berlin_Marathon_logo.svg.png',
+  }, // 1981 (same year as London, but started later in the year)
+  'tokyo-marathon': {
+    name: 'Tokyo Marathon',
+    distance: 26.2,
+    unit: 'mi',
+    elevationProfile: TOKYO_MARATHON_ELEVATION,
+    logoUrl:
+      'https://upload.wikimedia.org/wikipedia/en/thumb/9/9f/Tokyo_Marathon_logo.svg/1280px-Tokyo_Marathon_logo.svg.png',
+  }, // 2007
+  'sydney-marathon': {
+    name: 'Sydney Marathon',
+    distance: 26.2,
+    unit: 'mi',
+    elevationProfile: SYDNEY_MARATHON_ELEVATION,
+    logoUrl:
+      'https://childrenofperu.org/wp-content/uploads/2024/11/tcs-sydney-logo.png',
+  }, // 2001, but became World Major in 2023
 }
 
 // Calculate grade between two elevation points

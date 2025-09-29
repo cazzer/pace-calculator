@@ -7,6 +7,8 @@ import {
   calculateGradeAdjustedPace,
   getElevationAtDistance,
   calculateActualPaceForTargetGAP,
+  calculateGrade,
+  ElevationPoint,
 } from './elevation'
 
 // ---- Component ----
@@ -166,10 +168,15 @@ export function Splits({
   // Enhance splits with elevation data if race profile is available
   const enhancedSplits = rows.map((split, index) => {
     if (!raceProfile)
-      return { ...split, elevation: null, grade: null, targetPace: null }
+      return {
+        ...split,
+        elevation: null,
+        grade: null,
+        targetPace: null,
+        gradeRange: null,
+      }
 
     // Convert split distance to profile units (miles)
-    // Extract distance from the split's distanceLabel or calculate from cumulative time
     let distanceInMiles: number
 
     // Parse distance from distanceLabel (e.g., "13.11 mi" or "21.10 km")
@@ -210,7 +217,9 @@ export function Splits({
       raceProfile.elevationProfile,
       distanceInMiles
     )
-    const grade = getAverageGrade(
+
+    // Calculate grade range and weighted average for the segment
+    const gradeStats = calculateGradeStats(
       raceProfile.elevationProfile,
       prevDistanceInMiles,
       distanceInMiles
@@ -220,17 +229,24 @@ export function Splits({
     let targetPace: number
     if (pacingStrategy === 'even-pace') {
       // Show what the pace will feel like (GAP)
-      targetPace = calculateGradeAdjustedPace(paceSecondsPerUnit, grade)
+      targetPace = calculateGradeAdjustedPace(
+        paceSecondsPerUnit,
+        gradeStats.weightedAvg
+      )
     } else {
       // Show what actual pace to run for consistent effort
-      targetPace = calculateActualPaceForTargetGAP(paceSecondsPerUnit, grade)
+      targetPace = calculateActualPaceForTargetGAP(
+        paceSecondsPerUnit,
+        gradeStats.weightedAvg
+      )
     }
 
     return {
       ...split,
       elevation: Math.round(elevation),
-      grade: Math.round(grade * 10) / 10,
+      grade: Math.round(gradeStats.weightedAvg * 10) / 10,
       targetPace,
+      gradeRange: gradeStats,
     }
   })
 
@@ -362,9 +378,24 @@ export function Splits({
                             : 'inherit',
                       }}
                     >
-                      {split.grade !== null
-                        ? `${split.grade > 0 ? '+' : ''}${split.grade}%`
-                        : '—'}
+                      {split.grade !== null && split.gradeRange !== null ? (
+                        <div>
+                          <span>
+                            {split.grade > 0 ? '+' : ''}
+                            {split.grade}%
+                          </span>
+                          {Math.abs(
+                            split.gradeRange.max - split.gradeRange.min
+                          ) > 0.5 && (
+                            <div style={styles.gradeRange}>
+                              {split.gradeRange.min.toFixed(1)}% to{' '}
+                              {split.gradeRange.max.toFixed(1)}%
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        '—'
+                      )}
                     </td>
                     <td style={styles.tdGap}>
                       {split.targetPace !== null ? (
@@ -416,6 +447,77 @@ export function Splits({
   )
 }
 
+// ---- Helper Functions ----
+
+// Calculate grade statistics for a segment
+function calculateGradeStats(
+  profile: ElevationPoint[],
+  startDistance: number,
+  endDistance: number
+): { weightedAvg: number; min: number; max: number } {
+  const relevantPoints = profile.filter(
+    (p) => p.distance >= startDistance && p.distance <= endDistance
+  )
+
+  if (relevantPoints.length < 2) {
+    const avg = getAverageGrade(profile, startDistance, endDistance)
+    return { weightedAvg: avg, min: avg, max: avg }
+  }
+
+  let totalWeightedGrade = 0
+  let totalDistance = 0
+  const grades: number[] = []
+
+  for (let i = 0; i < relevantPoints.length - 1; i++) {
+    const p1 = relevantPoints[i]
+    const p2 = relevantPoints[i + 1]
+    const segmentDistance = p2.distance - p1.distance
+    const segmentGrade = calculateGrade(p1, p2)
+
+    totalWeightedGrade += segmentGrade * segmentDistance
+    totalDistance += segmentDistance
+    grades.push(segmentGrade)
+  }
+
+  const weightedAvg = totalDistance > 0 ? totalWeightedGrade / totalDistance : 0
+
+  return {
+    weightedAvg,
+    min: Math.min(...grades),
+    max: Math.max(...grades),
+  }
+}
+
+// Calculate weighted average grade for a segment
+function calculateWeightedAverageGrade(
+  profile: ElevationPoint[],
+  startDistance: number,
+  endDistance: number
+): number {
+  const relevantPoints = profile.filter(
+    (p) => p.distance >= startDistance && p.distance <= endDistance
+  )
+
+  if (relevantPoints.length < 2) {
+    return getAverageGrade(profile, startDistance, endDistance)
+  }
+
+  let totalWeightedGrade = 0
+  let totalDistance = 0
+
+  for (let i = 0; i < relevantPoints.length - 1; i++) {
+    const p1 = relevantPoints[i]
+    const p2 = relevantPoints[i + 1]
+    const segmentDistance = p2.distance - p1.distance
+    const segmentGrade = calculateGrade(p1, p2)
+
+    totalWeightedGrade += segmentGrade * segmentDistance
+    totalDistance += segmentDistance
+  }
+
+  return totalDistance > 0 ? totalWeightedGrade / totalDistance : 0
+}
+
 // ---- Styles ----
 const styles: Record<string, React.CSSProperties> = {
   card: {
@@ -460,7 +562,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '.95rem',
   },
   th: {
-    textAlign: 'left',
+    textAlign: 'center',
     borderBottom: '1px solid var(--border-table)',
     padding: '8px 6px',
     fontWeight: 600,
@@ -492,7 +594,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-muted)',
   },
   thElevation: {
-    textAlign: 'left',
+    textAlign: 'center',
     borderBottom: '1px solid var(--border-table)',
     padding: '8px 6px',
     fontWeight: 600,
@@ -501,7 +603,7 @@ const styles: Record<string, React.CSSProperties> = {
       'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%)',
   },
   thGap: {
-    textAlign: 'left',
+    textAlign: 'center',
     borderBottom: '1px solid var(--border-table)',
     padding: '8px 6px',
     fontWeight: 600,
@@ -525,5 +627,12 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'rgba(231, 76, 60, 0.05)',
     fontSize: '0.9rem',
     fontWeight: 500,
+  },
+  gradeRange: {
+    fontSize: '0.65rem',
+    color: 'var(--text-muted)',
+    fontStyle: 'italic',
+    lineHeight: 1.1,
+    marginTop: 1,
   },
 }

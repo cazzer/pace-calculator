@@ -547,22 +547,6 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 16,
   },
 
-  stickyContent: {
-    maxWidth: 820,
-    margin: '0 auto',
-    padding: '12px 16px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 12,
-    alignItems: 'center',
-  },
-
-  stickyResultCard: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-  },
-
   resultValue: {
     fontSize: '1.8rem',
     fontWeight: 700,
@@ -577,38 +561,6 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 4,
     fontWeight: 500,
     transition: 'all 0.3s ease',
-  },
-
-  stickyFields: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 24,
-    width: '100%',
-    maxWidth: 400,
-    opacity: 0.7,
-    animation: 'fadeInUp 0.4s ease-out 0.1s both',
-  },
-
-  stickyField: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    textAlign: 'center',
-  },
-
-  stickyFieldValue: {
-    fontSize: '0.9rem',
-    fontWeight: 500,
-    color: 'var(--text-primary)',
-    lineHeight: 1.2,
-  },
-
-  stickyFieldLabel: {
-    fontSize: '0.7rem',
-    color: 'var(--text-tertiary)',
-    marginTop: 2,
-    textTransform: 'uppercase',
-    letterSpacing: '0.3px',
   },
 
   error: {

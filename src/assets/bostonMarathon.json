@@ -1,0 +1,302 @@
+[
+  {
+    "distance": 0.0,
+    "elevation": 415.6
+  },
+  {
+    "distance": 0.174,
+    "elevation": 384.2
+  },
+  {
+    "distance": 0.801,
+    "elevation": 344.2
+  },
+  {
+    "distance": 1.434,
+    "elevation": 332.3
+  },
+  {
+    "distance": 1.755,
+    "elevation": 317.0
+  },
+  {
+    "distance": 2.448,
+    "elevation": 310.5
+  },
+  {
+    "distance": 3.064,
+    "elevation": 263.4
+  },
+  {
+    "distance": 3.403,
+    "elevation": 213.3
+  },
+  {
+    "distance": 4.092,
+    "elevation": 180.7
+  },
+  {
+    "distance": 4.183,
+    "elevation": 179.8
+  },
+  {
+    "distance": 4.255,
+    "elevation": 180.7
+  },
+  {
+    "distance": 4.518,
+    "elevation": 195.4
+  },
+  {
+    "distance": 4.914,
+    "elevation": 201.6
+  },
+  {
+    "distance": 5.777,
+    "elevation": 180.7
+  },
+  {
+    "distance": 5.921,
+    "elevation": 170.9
+  },
+  {
+    "distance": 6.154,
+    "elevation": 169.4
+  },
+  {
+    "distance": 6.573,
+    "elevation": 162.0
+  },
+  {
+    "distance": 6.661,
+    "elevation": 161.4
+  },
+  {
+    "distance": 7.338,
+    "elevation": 160.8
+  },
+  {
+    "distance": 7.837,
+    "elevation": 157.2
+  },
+  {
+    "distance": 8.475,
+    "elevation": 161.7
+  },
+  {
+    "distance": 8.785,
+    "elevation": 161.7
+  },
+  {
+    "distance": 8.904,
+    "elevation": 162.6
+  },
+  {
+    "distance": 9.115,
+    "elevation": 162.6
+  },
+  {
+    "distance": 9.22,
+    "elevation": 164.6
+  },
+  {
+    "distance": 9.406,
+    "elevation": 163.1
+  },
+  {
+    "distance": 9.652,
+    "elevation": 155.7
+  },
+  {
+    "distance": 10.118,
+    "elevation": 153.3
+  },
+  {
+    "distance": 10.65,
+    "elevation": 145.5
+  },
+  {
+    "distance": 10.851,
+    "elevation": 145.0
+  },
+  {
+    "distance": 11.079,
+    "elevation": 145.0
+  },
+  {
+    "distance": 11.135,
+    "elevation": 147.3
+  },
+  {
+    "distance": 11.637,
+    "elevation": 151.5
+  },
+  {
+    "distance": 12.931,
+    "elevation": 191.8
+  },
+  {
+    "distance": 13.108,
+    "elevation": 192.7
+  },
+  {
+    "distance": 13.38,
+    "elevation": 191.5
+  },
+  {
+    "distance": 13.977,
+    "elevation": 167.0
+  },
+  {
+    "distance": 14.803,
+    "elevation": 150.6
+  },
+  {
+    "distance": 14.996,
+    "elevation": 151.2
+  },
+  {
+    "distance": 15.329,
+    "elevation": 147.9
+  },
+  {
+    "distance": 15.543,
+    "elevation": 136.6
+  },
+  {
+    "distance": 15.792,
+    "elevation": 137.5
+  },
+  {
+    "distance": 15.999,
+    "elevation": 134.2
+  },
+  {
+    "distance": 16.168,
+    "elevation": 139.3
+  },
+  {
+    "distance": 16.456,
+    "elevation": 141.4
+  },
+  {
+    "distance": 16.716,
+    "elevation": 151.5
+  },
+  {
+    "distance": 17.077,
+    "elevation": 157.8
+  },
+  {
+    "distance": 17.316,
+    "elevation": 150.9
+  },
+  {
+    "distance": 17.74,
+    "elevation": 77.0
+  },
+  {
+    "distance": 18.35,
+    "elevation": 109.8
+  },
+  {
+    "distance": 18.58,
+    "elevation": 102.3
+  },
+  {
+    "distance": 19.153,
+    "elevation": 144.1
+  },
+  {
+    "distance": 19.347,
+    "elevation": 119.9
+  },
+  {
+    "distance": 19.409,
+    "elevation": 119.0
+  },
+  {
+    "distance": 19.506,
+    "elevation": 119.6
+  },
+  {
+    "distance": 19.737,
+    "elevation": 126.8
+  },
+  {
+    "distance": 20.37,
+    "elevation": 171.5
+  },
+  {
+    "distance": 20.485,
+    "elevation": 202.2
+  },
+  {
+    "distance": 20.661,
+    "elevation": 211.2
+  },
+  {
+    "distance": 21.163,
+    "elevation": 100.5
+  },
+  {
+    "distance": 21.492,
+    "elevation": 86.5
+  },
+  {
+    "distance": 21.575,
+    "elevation": 59.9
+  },
+  {
+    "distance": 22.049,
+    "elevation": 17.9
+  },
+  {
+    "distance": 22.275,
+    "elevation": 13.1
+  },
+  {
+    "distance": 22.379,
+    "elevation": 13.7
+  },
+  {
+    "distance": 23.275,
+    "elevation": 13.4
+  },
+  {
+    "distance": 23.504,
+    "elevation": 13.4
+  },
+  {
+    "distance": 23.534,
+    "elevation": 13.7
+  },
+  {
+    "distance": 23.793,
+    "elevation": 13.1
+  },
+  {
+    "distance": 24.169,
+    "elevation": 12.8
+  },
+  {
+    "distance": 24.894,
+    "elevation": 13.1
+  },
+  {
+    "distance": 25.291,
+    "elevation": 13.5
+  },
+  {
+    "distance": 25.701,
+    "elevation": 13.5
+  },
+  {
+    "distance": 25.91,
+    "elevation": 13.1
+  },
+  {
+    "distance": 26.276,
+    "elevation": 13.1
+  }
+]
