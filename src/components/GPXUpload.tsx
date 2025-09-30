@@ -9,7 +9,7 @@ import {
   compressElevationData,
   generateElevationHash,
 } from '../utils/compression'
-import { RaceProfile } from '../elevation'
+import { RaceProfile } from '../types'
 
 interface GPXUploadProps {
   onGPXLoaded: (profile: RaceProfile) => void

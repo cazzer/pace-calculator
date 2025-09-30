@@ -1,6 +1,7 @@
 import React from 'react'
 import { Unit } from '../types'
-import { RACE_PROFILES, RaceProfile } from '../elevation'
+import { RACE_PROFILES } from '../elevation'
+import { RaceProfile } from '../types'
 import { hidePacingStrategy } from '../config'
 import { parseUrlParams } from '../hashRouter'
 import { QualifyingTimesSection } from './QualifyingTimesSection'

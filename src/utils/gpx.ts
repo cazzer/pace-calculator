@@ -1,3 +1,5 @@
+import { ElevationPoint } from '../types'
+
 export interface GPXTrackPoint {
   latitude: number
   longitude: number
@@ -12,6 +14,9 @@ export interface GPXData {
   elevationGain: number // in feet
   elevationLoss: number // in feet
 }
+
+// Conversion constant
+const METERS_TO_FEET = 3.28084
 
 /**
  * Calculate distance between two GPS coordinates using Haversine formula
@@ -79,7 +84,7 @@ export function parseGPXFile(gpxContent: string): Promise<GPXData> {
         const lon = parseFloat(point.getAttribute('lon') || '0')
         const eleElement = point.querySelector('ele')
         const elevation = eleElement
-          ? parseFloat(eleElement.textContent || '0') * 3.28084
+          ? parseFloat(eleElement.textContent || '0') * METERS_TO_FEET
           : 0 // Convert meters to feet
 
         // Validate coordinates

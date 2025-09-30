@@ -5,12 +5,14 @@ import { PresetOptions } from './components/PresetOptions'
 import { CalculationModeToggle } from './components/CalculationModeToggle'
 import { InputSection } from './components/InputSection'
 import { ResultCard } from './components/ResultCard'
+import { ElevationChart } from './components/ElevationChart'
 import {
   parsePaceToSeconds,
   formatHMS,
   convertDistanceTo,
 } from './utils/common'
-import { RaceProfile, RACE_PROFILES } from './elevation'
+import { RACE_PROFILES } from './elevation'
+import { RaceProfile } from './types'
 import { useLocation } from 'wouter'
 import { parseUrlParams, serializeUrlParams, AppState } from './hashRouter'
 
@@ -413,6 +415,14 @@ export default function App() {
           pacingStrategy={pacingStrategy}
           calcMode={calcMode}
         />
+
+        {/* Elevation Chart - only show when race profile is selected */}
+        {raceProfile && (
+          <ElevationChart
+            raceProfile={raceProfile}
+            distanceUnit={distanceUnit}
+          />
+        )}
 
         {/* Footer with GitHub link */}
         <div style={styles.footer}>

@@ -1,10 +1,9 @@
 import { convertDistanceTo, calculateGradeStats } from './common'
 import {
-  RaceProfile,
   calculateGradeAdjustedPace,
   getElevationAtDistance,
-  calculateActualPaceForTargetGAP,
 } from '../elevation'
+import { RaceProfile } from '../types'
 
 export interface SplitMarker {
   label: string

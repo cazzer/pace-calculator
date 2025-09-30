@@ -1,10 +1,7 @@
 import React from 'react'
-import {
-  RACE_PROFILES,
-  RaceProfile,
-  generateElevationSparkline,
-} from '../elevation'
+import { RACE_PROFILES, generateElevationSparkline } from '../elevation'
 import { GPXUpload } from './GPXUpload'
+import { RaceProfile } from '../types'
 
 interface RacePresetsSectionProps {
   onRacePreset: (raceProfile: RaceProfile) => void

@@ -1,5 +1,6 @@
-import { calculateGrade, ElevationPoint, getAverageGrade } from '../elevation'
+import { calculateGrade, getAverageGrade } from '../elevation'
 import { Unit } from '../types'
+import { ElevationPoint } from '../types'
 
 // ---- Constants ----
 const MI_PER_KM = 1 / 1.609344 // ~0.621371

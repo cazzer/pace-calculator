@@ -1,9 +1,20 @@
 // ---- Types ----
 export type Unit = 'mi' | 'km'
+export interface ElevationPoint {
+  distance: number // in miles or km (matches race profile unit)
+  elevation: number // in feet (converted from meters at import/parse time)
+}
 
-// Import from elevation to avoid duplication
-import { RaceProfile } from './elevation'
-export type { RaceProfile } from './elevation'
+export interface RaceProfile {
+  name: string
+  distance: number
+  unit: 'mi' | 'km'
+  elevationProfile: ElevationPoint[]
+  logoUrl?: string
+  isCustom?: boolean
+  elevationGain?: number
+  elevationLoss?: number
+}
 
 export interface SplitsProps {
   /** Pace in seconds per selected paceUnit (mi or km) */

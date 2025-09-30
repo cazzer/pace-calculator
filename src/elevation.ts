@@ -8,23 +8,8 @@ import {
   SYDNEY_MARATHON_ELEVATION,
   UNITED_NYC_HALF_ELEVATION,
 } from './assets/elevationData'
+import { RaceProfile, ElevationPoint } from './types'
 import { minetti2002CostOfRunning } from './utils/common'
-
-export interface ElevationPoint {
-  distance: number // in miles
-  elevation: number // in feet
-}
-
-export interface RaceProfile {
-  name: string
-  distance: number
-  unit: 'mi' | 'km'
-  elevationProfile: ElevationPoint[]
-  logoUrl?: string
-  isCustom?: boolean
-  elevationGain?: number
-  elevationLoss?: number
-}
 
 export const RACE_PROFILES: Record<string, RaceProfile> = {
   'boston-marathon': {

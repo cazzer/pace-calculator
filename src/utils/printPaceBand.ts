@@ -1,5 +1,5 @@
 import { formatHMS } from './common'
-import { RaceProfile } from '../elevation'
+import { RaceProfile } from '../types'
 
 interface SplitData {
   label: string
