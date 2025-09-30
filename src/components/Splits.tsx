@@ -255,6 +255,7 @@ export function Splits({
           </tbody>
         </table>
       </div>
+
       <div style={styles.note}>
         {raceProfile ? (
           <>

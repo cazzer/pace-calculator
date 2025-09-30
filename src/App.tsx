@@ -208,7 +208,7 @@ export default function App() {
         setGoalTimeStr(goalTimeString)
       }
     }
-    // Don't change calculation mode - respect user's current choice
+    // The existing useEffect will handle URL updates automatically
   }
 
   const handleDistancePreset = (distance: number, unit: Unit) => {
@@ -238,7 +238,7 @@ export default function App() {
     window.history.replaceState({}, '', newUrl)
   }, [])
 
-  // Update URL when state changes
+  // Update URL when state changes (this already exists and should work)
   React.useEffect(() => {
     const currentState: AppState = {
       distance: Number.isFinite(distanceVal) ? distanceVal : undefined,

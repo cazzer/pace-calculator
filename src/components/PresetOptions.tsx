@@ -27,6 +27,7 @@ export function PresetOptions({
   onRacePreset,
   onClearRace,
   paceUnit,
+  currentPaceSeconds, // Make sure this is being used
   raceProfile,
   pacingStrategy,
   onPacingStrategyChange,
@@ -155,24 +156,39 @@ export function PresetOptions({
     onPacePreset(Math.round(paceToSet), corral)
   }
 
-  // Check if a pace preset is selected
+  // Check if a pace preset is selected - fix the logic
   const isPaceSelected = React.useMemo(
-    () => (pace10kSeconds: number) => {
-      if (!urlState.pace || !currentDistanceData) return false
+    () => (targetPaceSeconds: number) => {
+      if (!currentPaceSeconds) return false
 
-      const calculatedPace = calculatePaceForDistance(pace10kSeconds)
-      let expectedPaceInUrl = calculatedPace
-
-      if (urlState.paceUnit === 'km') {
-        expectedPaceInUrl = calculatedPace / 1.609344
+      // Convert both paces to the same unit for comparison
+      let currentPaceInMiles = currentPaceSeconds
+      if (paceUnit === 'km') {
+        currentPaceInMiles = currentPaceSeconds * 1.609344
       }
 
-      const urlPaceSeconds = parsePaceStringToSeconds(urlState.pace)
-      if (urlPaceSeconds === null) return false
-
-      return Math.abs(urlPaceSeconds - expectedPaceInUrl) <= 3
+      // Allow for 3-second tolerance
+      return Math.abs(currentPaceInMiles - targetPaceSeconds) <= 3
     },
-    [urlState.pace, urlState.paceUnit, currentDistanceData]
+    [currentPaceSeconds, paceUnit]
+  )
+
+  // For NYRR paces, we need to check the calculated pace for the current distance
+  const isNYRRPaceSelected = React.useMemo(
+    () => (pace10kSeconds: number) => {
+      if (!currentPaceSeconds || !currentDistanceData) return false
+
+      const calculatedPace = calculatePaceForDistance(pace10kSeconds)
+
+      // Convert current pace to miles if needed for comparison
+      let currentPaceInMiles = currentPaceSeconds
+      if (paceUnit === 'km') {
+        currentPaceInMiles = currentPaceSeconds * 1.609344
+      }
+
+      return Math.abs(currentPaceInMiles - calculatedPace) <= 3
+    },
+    [currentPaceSeconds, paceUnit, currentDistanceData]
   )
 
   const togglePaceSection = (sectionKey: string) => {
@@ -286,14 +302,7 @@ export function PresetOptions({
                     <QualifyingTimesSection
                       onPacePreset={handlePacePreset}
                       formatPaceForDisplay={formatPaceForDisplay}
-                      isPaceSelected={(paceSeconds) => {
-                        if (!urlState.pace) return false
-                        const urlPaceSeconds = parsePaceStringToSeconds(
-                          urlState.pace
-                        )
-                        if (urlPaceSeconds === null) return false
-                        return Math.abs(urlPaceSeconds - paceSeconds) <= 3
-                      }}
+                      isPaceSelected={isPaceSelected} // Use the corrected function
                     />
                   </div>
                 )}
@@ -353,7 +362,7 @@ export function PresetOptions({
                               key={preset.corral}
                               style={{
                                 ...styles.presetButton,
-                                ...(isPaceSelected(preset.pace10kSeconds)
+                                ...(isNYRRPaceSelected(preset.pace10kSeconds) // Use the NYRR-specific function
                                   ? styles.presetButtonActive
                                   : {}),
                               }}
