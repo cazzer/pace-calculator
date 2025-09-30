@@ -290,15 +290,11 @@ export function PresetOptions({
                   onClick={() => togglePaceSection('qualifying')}
                   aria-expanded={activePaceSection === 'qualifying'}
                 >
-                  Marathon Qualifying Times (2026){' '}
+                  Marathon Qualifying Times{' '}
                   {activePaceSection === 'qualifying' ? '▲' : '▼'}
                 </button>
                 {activePaceSection === 'qualifying' && (
                   <div style={styles.collapsibleContent}>
-                    <div style={styles.elevationDisclaimer}>
-                      Based on official 2026 qualifying standards for major
-                      marathons
-                    </div>
                     <QualifyingTimesSection
                       onPacePreset={handlePacePreset}
                       formatPaceForDisplay={formatPaceForDisplay}
@@ -331,6 +327,7 @@ export function PresetOptions({
                     ) : (
                       <>
                         <div style={styles.elevationDisclaimer}>
+                          Pace required to qualify for the respective corral.
                           Based on 10K pace requirements
                           {currentDistanceData
                             ? ` converted for ${currentDistanceData.label}`
@@ -750,6 +747,12 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'flex-end',
     marginTop: 16,
     zIndex: 100,
+  },
+  elevationDisclaimer: {
+    fontSize: '0.75rem',
+    color: 'var(--text-muted)',
+    fontStyle: 'italic',
+    marginBottom: 12,
   },
   doneButton: {
     padding: '16px 32px',
