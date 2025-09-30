@@ -61,7 +61,7 @@ export function Splits({
   }
 
   const paceColumnHeader =
-    pacingStrategy === 'even-pace' ? 'Grade Adjusted Pace' : 'Target Pace'
+    pacingStrategy === 'even-pace' ? 'Grade Adjusted Pace*' : 'Target Pace'
 
   const paceColumnNote =
     pacingStrategy === 'even-pace'
@@ -146,7 +146,7 @@ export function Splits({
                   <th style={styles.thGap}>
                     <span className="desktop-label">{paceColumnHeader}</span>
                     <span className="mobile-label">
-                      {pacingStrategy === 'even-pace' ? 'GAP' : 'Pace'}
+                      {pacingStrategy === 'even-pace' ? 'GAP*' : 'Pace'}
                     </span>
                   </th>
                 </>
