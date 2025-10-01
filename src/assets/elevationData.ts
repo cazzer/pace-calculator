@@ -21,19 +21,11 @@ const convertElevationData = (data: any[]): ElevationPoint[] =>
   }))
 
 // Type and convert the imported JSON data to ElevationPoint arrays with feet
-export const NYC_MARATHON_ELEVATION: ElevationPoint[] =
-  convertElevationData(nycMarathonData)
-export const BOSTON_MARATHON_ELEVATION: ElevationPoint[] =
-  convertElevationData(bostonMarathonData)
-export const CHICAGO_MARATHON_ELEVATION: ElevationPoint[] =
-  convertElevationData(chicagoMarathonData)
-export const LONDON_MARATHON_ELEVATION: ElevationPoint[] =
-  convertElevationData(londonMarathonData)
-export const BERLIN_MARATHON_ELEVATION: ElevationPoint[] =
-  convertElevationData(berlinMarathonData)
-export const TOKYO_MARATHON_ELEVATION: ElevationPoint[] =
-  convertElevationData(tokyoMarathonData)
-export const SYDNEY_MARATHON_ELEVATION: ElevationPoint[] =
-  convertElevationData(sydneyMarathonData)
-export const UNITED_NYC_HALF_ELEVATION: ElevationPoint[] =
-  convertElevationData(unitedNycHalfData)
+export const NYC_MARATHON_ELEVATION: ElevationPoint[] = nycMarathonData
+export const BOSTON_MARATHON_ELEVATION: ElevationPoint[] = bostonMarathonData
+export const CHICAGO_MARATHON_ELEVATION: ElevationPoint[] = chicagoMarathonData
+export const LONDON_MARATHON_ELEVATION: ElevationPoint[] = londonMarathonData
+export const BERLIN_MARATHON_ELEVATION: ElevationPoint[] = berlinMarathonData
+export const TOKYO_MARATHON_ELEVATION: ElevationPoint[] = tokyoMarathonData
+export const SYDNEY_MARATHON_ELEVATION: ElevationPoint[] = sydneyMarathonData
+export const UNITED_NYC_HALF_ELEVATION: ElevationPoint[] = unitedNycHalfData
