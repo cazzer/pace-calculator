@@ -10,6 +10,8 @@ import {
   parsePaceToSeconds,
   formatHMS,
   convertDistanceTo,
+  convertPaceTo,
+  formatPaceForDisplay,
 } from './utils/common'
 import { RACE_PROFILES } from './elevation'
 import { RaceProfile } from './types'
@@ -72,6 +74,15 @@ export default function App() {
   const [pacingStrategy, setPacingStrategy] = React.useState<
     'even-pace' | 'even-effort'
   >(initialUrlState.pacingStrategy || 'even-pace')
+
+  const handleCalcModeChange = (mode: 'time' | 'pace') => {
+    setCalcMode(mode)
+    if (mode === 'pace') {
+      setPacingStrategy('even-pace')
+    }
+    // Update URL when calculation mode changes
+    serializeUrlParams({ mode })
+  }
 
   // Format pace input as user types
   const handlePaceInput = (value: string) => {
@@ -307,6 +318,53 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
 
+  const handlePaceUnitChange = (newUnit: Unit) => {
+    if (newUnit === paceUnit) return // No change needed
+
+    const paceInSeconds = parsePaceToSeconds(paceStr)
+    if (!paceInSeconds) return
+    const newPace = convertPaceTo(newUnit, paceInSeconds, paceUnit)
+
+    setPaceStr(formatPaceForDisplay(newPace, newUnit))
+    setPaceUnit(newUnit)
+
+    updateUrlState({
+      pace: formatPaceForDisplay(newPace, newUnit),
+      paceUnit: newUnit,
+    })
+  }
+
+  // Handle distance unit change with conversion
+  const handleDistanceUnitChange = (newUnit: Unit) => {
+    if (newUnit === distanceUnit) return // No change needed
+
+    // Convert current distance to new unit
+    const convertedDistance = convertDistanceTo(
+      newUnit,
+      distanceVal,
+      distanceUnit
+    )
+
+    // If we have a race profile, use its exact converted distance for precision
+    let finalDistance = convertedDistance
+    if (raceProfile) {
+      finalDistance = convertDistanceTo(
+        newUnit,
+        raceProfile.distance,
+        raceProfile.unit
+      )
+    }
+
+    setDistanceStr(finalDistance.toString())
+    setDistanceUnit(newUnit)
+
+    // Update URL state with converted values
+    updateUrlState({
+      distance: finalDistance,
+      distanceUnit: newUnit,
+    })
+  }
+
   return (
     <div
       style={{
@@ -354,7 +412,7 @@ export default function App() {
 
           <CalculationModeToggle
             calcMode={calcMode}
-            onChange={setCalcMode}
+            onChange={handleCalcModeChange}
           />
 
           <InputSection
@@ -363,12 +421,12 @@ export default function App() {
             distanceUnit={distanceUnit}
             distanceError={distanceError}
             onDistanceChange={setDistanceStr}
-            onDistanceUnitChange={setDistanceUnit}
+            onDistanceUnitChange={handleDistanceUnitChange}
             paceStr={paceStr}
             paceUnit={paceUnit}
             paceError={paceError}
             onPaceChange={handlePaceInput}
-            onPaceUnitChange={setPaceUnit}
+            onPaceUnitChange={handlePaceUnitChange}
             goalTimeStr={goalTimeStr}
             goalTimeError={goalTimeError}
             onGoalTimeChange={handleGoalTimeInput}

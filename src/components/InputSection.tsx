@@ -125,6 +125,11 @@ export function InputSection({
                 borderColor: goalTimeError ? '#c0392b' : '#ccc',
               }}
             />
+            <UnitToggle
+              value={paceUnit}
+              onChange={onPaceUnitChange}
+              idBase="pace"
+            />
           </div>
           <div style={styles.help}>
             Type numbers: <code>31500</code> → <code>3:15:00</code>

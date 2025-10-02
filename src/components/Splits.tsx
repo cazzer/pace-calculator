@@ -97,14 +97,6 @@ export function Splits({
         )}
       </div>
 
-      {/* Add disclaimer for even-effort mode */}
-      {pacingStrategy === 'even-effort' && raceProfile && (
-        <div style={styles.disclaimer}>
-          <strong>Note:</strong> Even effort is based on estimated course
-          conditions. Always defer to official race pacers when available.
-        </div>
-      )}
-
       <style>{`
         @media (max-width: 768px) {
           .splits-table th, .splits-table td {

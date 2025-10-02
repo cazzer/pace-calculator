@@ -33,6 +33,7 @@ export function PresetOptions({
   pacingStrategy,
   onPacingStrategyChange,
   calcMode, // Add this parameter
+  currentDistanceUnit, // Add this prop
 }: PresetOptionsProps) {
   const [isOpen, setIsOpen] = React.useState(false)
   const [activePaceSection, setActivePaceSection] = React.useState<
@@ -443,17 +444,15 @@ export function PresetOptions({
                   </div>
                 )}
 
-                {pacingStrategy === 'even-effort' && calcMode !== 'pace' && (
+                {pacingStrategy === 'even-effort' && calcMode == 'pace' && (
                   <div style={styles.gapNote}>
-                    <strong>About Grade Adjusted Pace:</strong> Our calculations
-                    are based on metabolic cost research showing ~3% pace
-                    adjustment per 1% uphill grade and ~2% per 1% downhill
-                    grade. This approach helps maintain consistent physiological
-                    effort across elevation changes. Learn more about{' '}
+                    <strong>About Grade Adjusted Pace:</strong> This approach
+                    helps maintain consistent physiological effort across
+                    elevation changes. Learn more about{' '}
                     <a
-                      href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6024138/"
+                      href="https://pubmed.ncbi.nlm.nih.gov/12183501/"
                       target="_blank"
-                      rel="noopener noreferrer"
+                      rel="noopener"
                       style={styles.link}
                     >
                       running energetics research
@@ -462,12 +461,13 @@ export function PresetOptions({
                     <a
                       href="https://medium.com/strava-engineering/an-improved-gap-model-8b07ae8886c3"
                       target="_blank"
-                      rel="noopener noreferrer"
+                      rel="noopener"
                       style={styles.link}
                     >
                       Strava's GAP approach
                     </a>
-                    .
+                    . Use at your own risk and defer to professional pacers when
+                    available.
                   </div>
                 )}
               </div>
@@ -477,6 +477,7 @@ export function PresetOptions({
               onRacePreset={onRacePreset}
               isRaceSelected={isRaceSelected}
               onGPXSuccess={handleGPXSuccess}
+              currentDistanceUnit={currentDistanceUnit} // Pass current unit
             />
 
             {/* Sticky Done Button */}

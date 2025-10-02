@@ -46,6 +46,22 @@ export function parsePaceToSeconds(input: string): number | null {
   return null
 }
 
+export function formatPaceForDisplay(paceSeconds: number, unit: Unit): string {
+  if (!Number.isFinite(paceSeconds) || paceSeconds <= 0) return '—'
+  const totalSecondsPerMile =
+    unit === 'mi' ? paceSeconds : paceSeconds / KM_PER_MI
+  const totalSecondsPerKm =
+    unit === 'km' ? paceSeconds : paceSeconds / MI_PER_KM
+
+  const secs = Math.round(
+    unit === 'mi' ? totalSecondsPerMile : totalSecondsPerKm
+  )
+  const m = Math.floor(secs / 60)
+  const s = secs % 60
+  const ss = s.toString().padStart(2, '0')
+  return `${m}:${ss}`
+}
+
 export function formatHMS(totalSeconds: number): string {
   if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return '—'
   const secs = Math.round(totalSeconds)
@@ -66,6 +82,19 @@ export function convertDistanceTo(
   if (!Number.isFinite(value)) return NaN
   if (targetUnit === fromUnit) return value
   return targetUnit === 'mi' ? value * MI_PER_KM : value * KM_PER_MI
+}
+
+export function convertPaceTo(
+  targetUnit: Unit,
+  paceSecondsPerFromUnit: number,
+  fromUnit: Unit
+): number {
+  if (!Number.isFinite(paceSecondsPerFromUnit) || paceSecondsPerFromUnit <= 0)
+    return NaN
+  if (targetUnit === fromUnit) return paceSecondsPerFromUnit
+  return targetUnit === 'mi'
+    ? paceSecondsPerFromUnit / MI_PER_KM
+    : paceSecondsPerFromUnit / KM_PER_MI
 }
 
 // Calculate grade statistics for a segment
