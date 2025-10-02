@@ -240,6 +240,19 @@ function addElevationData(
   })
 }
 
+// Add temporary interfaces for intermediate calculations
+interface MetabolicSplit extends ElevationEnhancedSplit {
+  metabolicCost: number
+  segmentWeight: number
+  segmentDistanceInMiles: number
+}
+
+interface NaturalPaceSplit extends MetabolicSplit {
+  naturalPace: number
+  naturalSegmentTime: number
+  segmentDistanceInPaceUnit: number
+}
+
 function addEvenEffortTargetPaces(
   splits: ElevationEnhancedSplit[],
   paceSecondsPerUnit: number,
@@ -251,12 +264,17 @@ function addEvenEffortTargetPaces(
   let totalMetabolicWeight = 0
   let totalDistanceInMiles = 0
 
-  const metabolicSplits = splits.map((split) => {
+  const metabolicSplits: MetabolicSplit[] = splits.map((split) => {
     const segmentDistanceInMiles =
       split.distanceInMiles - split.prevDistanceInMiles
 
     if (!split.gradeRange || segmentDistanceInMiles <= 0) {
-      return { ...split, metabolicCost: 1.0, segmentWeight: 0 }
+      return {
+        ...split,
+        metabolicCost: 1.0,
+        segmentWeight: 0,
+        segmentDistanceInMiles: 0,
+      }
     }
 
     // Get metabolic cost from grade using Minetti 2002 model
@@ -289,8 +307,8 @@ function addEvenEffortTargetPaces(
 
   // PASS 1: Calculate natural effort-based paces and total time
   let naturalTotalTime = 0
-  const naturalPaces = metabolicSplits.map((split) => {
-    if (split.segmentDistanceInMiles && split.segmentDistanceInMiles > 0) {
+  const naturalPaces: NaturalPaceSplit[] = metabolicSplits.map((split) => {
+    if (split.segmentDistanceInMiles > 0) {
       // Calculate effort ratio compared to race average
       const effortRatio = split.metabolicCost / averageMetabolicCost
 

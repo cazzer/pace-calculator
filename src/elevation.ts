@@ -19,6 +19,7 @@ export const RACE_PROFILES: Record<string, RaceProfile> = {
     elevationProfile: BOSTON_MARATHON_ELEVATION,
     logoUrl:
       'https://upload.wikimedia.org/wikipedia/en/0/0c/Boston_Marathon_logo_%28updated_2024%29.png?20250420000148',
+    gpxUrl: 'https://www.strava.com/routes/3408689556698886246',
   }, // 1897 - oldest
   'united-nyc-half': {
     name: 'United NYC Half Marathon',
@@ -27,7 +28,8 @@ export const RACE_PROFILES: Record<string, RaceProfile> = {
     elevationProfile: UNITED_NYC_HALF_ELEVATION,
     logoUrl:
       'https://raceraves.com/wp-content/uploads/2022/09/uanych18_4p_primary_logo_nodate_rgb_full_color300x300.png',
-  }, // 1970s (as NYC Half)
+    gpxUrl: 'https://www.strava.com/routes/3334559585706062360',
+  },
   'nyc-marathon': {
     name: 'NYC Marathon',
     distance: 26.2,
@@ -35,6 +37,7 @@ export const RACE_PROFILES: Record<string, RaceProfile> = {
     elevationProfile: NYC_MARATHON_ELEVATION,
     logoUrl:
       'https://prodsitecorehaku01-image.nyrr.org/nyrrsitecoreblob/nyrr/logo/homepage_mara_logo_nycm_horizontallogo_fc_rgb.png?width=400&height=400',
+    gpxUrl: 'https://www.strava.com/routes/3271509816084244646',
   }, // 1970
   'chicago-marathon': {
     name: 'Chicago Marathon',
@@ -43,6 +46,7 @@ export const RACE_PROFILES: Record<string, RaceProfile> = {
     elevationProfile: CHICAGO_MARATHON_ELEVATION,
     logoUrl:
       'https://www.chicagomarathon.com/wp-content/themes/cm/images/logo.svg?v=2',
+    gpxUrl: 'https://www.strava.com/routes/3274142304814937750',
   }, // 1977
   'london-marathon': {
     name: 'London Marathon',
@@ -51,6 +55,7 @@ export const RACE_PROFILES: Record<string, RaceProfile> = {
     elevationProfile: LONDON_MARATHON_ELEVATION,
     logoUrl:
       'https://upload.wikimedia.org/wikipedia/en/2/26/TCS_London_Marathon_logo.png',
+    gpxUrl: '', // You can populate this with the Strava route or GPX file URL
   }, // 1981
   'berlin-marathon': {
     name: 'Berlin Marathon',
@@ -59,6 +64,7 @@ export const RACE_PROFILES: Record<string, RaceProfile> = {
     elevationProfile: BERLIN_MARATHON_ELEVATION,
     logoUrl:
       'https://upload.wikimedia.org/wikipedia/en/thumb/6/66/BMW_Berlin_Marathon_logo.svg/2560px-BMW_Berlin_Marathon_logo.svg.png',
+    gpxUrl: '', // You can populate this with the Strava route or GPX file URL
   }, // 1981 (same year as London, but started later in the year)
   'tokyo-marathon': {
     name: 'Tokyo Marathon',
@@ -67,6 +73,7 @@ export const RACE_PROFILES: Record<string, RaceProfile> = {
     elevationProfile: TOKYO_MARATHON_ELEVATION,
     logoUrl:
       'https://upload.wikimedia.org/wikipedia/en/thumb/9/9f/Tokyo_Marathon_logo.svg/1280px-Tokyo_Marathon_logo.svg.png',
+    gpxUrl: '', // You can populate this with the Strava route or GPX file URL
   }, // 2007
   'sydney-marathon': {
     name: 'Sydney Marathon',
@@ -75,6 +82,7 @@ export const RACE_PROFILES: Record<string, RaceProfile> = {
     elevationProfile: SYDNEY_MARATHON_ELEVATION,
     logoUrl:
       'https://childrenofperu.org/wp-content/uploads/2024/11/tcs-sydney-logo.png',
+    gpxUrl: 'https://www.strava.com/routes/3408686440096672870',
   }, // 2001, but became World Major in 2023
 }
 

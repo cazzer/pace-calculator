@@ -203,6 +203,18 @@ export const ElevationChart: React.FC<ElevationChartProps> = ({
           </ComposedChart>
         </ResponsiveContainer>
       </div>
+      {raceProfile.gpxUrl && (
+        <div style={styles.gpxLinkContainer}>
+          <a
+            href={raceProfile.gpxUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={styles.gpxLink}
+          >
+            View Route Source Data →
+          </a>
+        </div>
+      )}
     </div>
   )
 }
@@ -247,5 +259,22 @@ const styles = StyleSheet.create({
     color: 'var(--text-muted)',
     textAlign: 'center',
     marginTop: '12px',
+  },
+
+  gpxLinkContainer: {
+    textAlign: 'center',
+    marginTop: '8px',
+    paddingTop: '8px',
+    borderTop: '1px solid var(--border-color)',
+  },
+
+  gpxLink: {
+    color: 'var(--text-link)',
+    textDecoration: 'none',
+    fontSize: '0.9rem',
+    fontWeight: 500,
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
   },
 })

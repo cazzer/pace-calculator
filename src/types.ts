@@ -8,9 +8,10 @@ export interface ElevationPoint {
 export interface RaceProfile {
   name: string
   distance: number
-  unit: 'mi' | 'km'
+  unit: Unit
   elevationProfile: ElevationPoint[]
   logoUrl?: string
+  gpxUrl?: string // Optional URL to GPX file or Strava route
   isCustom?: boolean
   elevationGain?: number
   elevationLoss?: number
