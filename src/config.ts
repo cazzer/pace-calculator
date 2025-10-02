@@ -1,1 +1,1 @@
-export const hidePacingStrategy = true
+export const hidePacingStrategy = false

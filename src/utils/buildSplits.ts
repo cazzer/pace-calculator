@@ -1,4 +1,8 @@
-import { convertDistanceTo, calculateGradeStats } from './common'
+import {
+  convertDistanceTo,
+  calculateGradeStats,
+  minetti2002CostOfRunning,
+} from './common'
 import {
   calculateGradeAdjustedPace,
   getElevationAtDistance,
@@ -243,65 +247,129 @@ function addEvenEffortTargetPaces(
   totalDistance: number,
   distanceUnit: 'mi' | 'km'
 ): EnhancedSplit[] {
-  // Calculate total metabolic cost weight for all segments
-  let totalWeight = 0
-  for (const split of splits) {
-    if (split.gradeRange) {
-      totalWeight += split.gradeRange.totalWeight
+  // Calculate metabolic cost for each segment and race average
+  let totalMetabolicWeight = 0
+  let totalDistanceInMiles = 0
+
+  const metabolicSplits = splits.map((split) => {
+    const segmentDistanceInMiles =
+      split.distanceInMiles - split.prevDistanceInMiles
+
+    if (!split.gradeRange || segmentDistanceInMiles <= 0) {
+      return { ...split, metabolicCost: 1.0, segmentWeight: 0 }
     }
+
+    // Get metabolic cost from grade using Minetti 2002 model
+    const gradeDecimal = split.gradeRange.weightedAvg / 100
+    const metabolicCost = minetti2002CostOfRunning(gradeDecimal)
+
+    // Calculate this segment's contribution to total metabolic load
+    const segmentWeight = segmentDistanceInMiles * metabolicCost
+    totalMetabolicWeight += segmentWeight
+    totalDistanceInMiles += segmentDistanceInMiles
+
+    return {
+      ...split,
+      metabolicCost,
+      segmentWeight,
+      segmentDistanceInMiles,
+    }
+  })
+
+  // Validation: ensure we have meaningful data
+  if (totalMetabolicWeight <= 0 || totalDistanceInMiles <= 0) {
+    console.warn(
+      'Invalid metabolic cost data - falling back to even pace strategy'
+    )
+    return addEvenPaceTargetPaces(splits, paceSecondsPerUnit)
   }
 
-  // Calculate target total time and time per unit weight
+  // Calculate race average metabolic cost
+  const averageMetabolicCost = totalMetabolicWeight / totalDistanceInMiles
+
+  // PASS 1: Calculate natural effort-based paces and total time
+  let naturalTotalTime = 0
+  const naturalPaces = metabolicSplits.map((split) => {
+    if (split.segmentDistanceInMiles && split.segmentDistanceInMiles > 0) {
+      // Calculate effort ratio compared to race average
+      const effortRatio = split.metabolicCost / averageMetabolicCost
+
+      // Apply pace adjustment based on effort ratio (±30% variation)
+      const paceAdjustmentFactor = 0.7 + effortRatio * 0.6
+      const naturalPace = paceSecondsPerUnit * paceAdjustmentFactor
+
+      // Calculate segment time with natural pace
+      const segmentDistanceInPaceUnit = convertDistanceTo(
+        paceUnit,
+        split.segmentDistanceInMiles,
+        'mi'
+      )
+      const naturalSegmentTime = naturalPace * segmentDistanceInPaceUnit
+      naturalTotalTime += naturalSegmentTime
+
+      return {
+        ...split,
+        naturalPace,
+        naturalSegmentTime,
+        segmentDistanceInPaceUnit,
+      }
+    } else {
+      // Zero-distance segments
+      const naturalSegmentTime = split.segmentSeconds
+      naturalTotalTime += naturalSegmentTime
+      return {
+        ...split,
+        naturalPace: paceSecondsPerUnit,
+        naturalSegmentTime,
+        segmentDistanceInPaceUnit: 0,
+      }
+    }
+  })
+
+  // PASS 2: Calculate global scaling factor to hit target time
   const targetTotalDistanceInPaceUnit = convertDistanceTo(
     paceUnit,
     totalDistance,
     distanceUnit
   )
   const targetTotalTime = targetTotalDistanceInPaceUnit * paceSecondsPerUnit
-  const timePerUnitWeight =
-    totalWeight > 0 ? targetTotalTime / totalWeight : paceSecondsPerUnit
+  const globalScalingFactor = naturalTotalTime / targetTotalTime
 
-  // Recalculate timing and paces with even-effort distribution
+  // PASS 3: Apply scaled paces to achieve exact goal time
   let cumulativeTime = 0
 
-  return splits.map((split) => {
-    const segmentDistanceInMiles =
-      split.distanceInMiles - split.prevDistanceInMiles
+  return naturalPaces.map((split) => {
     let targetPace: number
-    let newCumulativeSeconds: number
     let newSegmentSeconds: number
 
-    if (segmentDistanceInMiles > 0 && split.gradeRange) {
-      // Calculate segment time based on metabolic cost weight
-      newSegmentSeconds = split.gradeRange.totalWeight * timePerUnitWeight
-
-      // Calculate the actual pace for this segment
-      const segmentDistanceInPaceUnit = convertDistanceTo(
-        paceUnit,
-        segmentDistanceInMiles,
-        'mi'
-      )
-      targetPace =
-        segmentDistanceInPaceUnit > 0
-          ? newSegmentSeconds / segmentDistanceInPaceUnit
-          : paceSecondsPerUnit
-
-      cumulativeTime += newSegmentSeconds
-      newCumulativeSeconds = cumulativeTime
+    if (split.segmentDistanceInPaceUnit > 0) {
+      // Scale the natural pace to hit goal time while preserving effort distribution
+      targetPace = split.naturalPace / globalScalingFactor
+      newSegmentSeconds = targetPace * split.segmentDistanceInPaceUnit
     } else {
-      // For zero-distance segments, keep original timing
-      newSegmentSeconds = split.segmentSeconds
-      newCumulativeSeconds = cumulativeTime + newSegmentSeconds
-      cumulativeTime = newCumulativeSeconds
+      // Zero-distance segments keep baseline pace
       targetPace = paceSecondsPerUnit
+      newSegmentSeconds = split.segmentSeconds
     }
 
+    cumulativeTime += newSegmentSeconds
+
     // Remove helper properties and return final split
-    const { distanceInMiles, prevDistanceInMiles, ...finalSplit } = split
+    const {
+      distanceInMiles,
+      prevDistanceInMiles,
+      metabolicCost,
+      segmentWeight,
+      segmentDistanceInMiles,
+      naturalPace,
+      naturalSegmentTime,
+      segmentDistanceInPaceUnit,
+      ...finalSplit
+    } = split
 
     return {
       ...finalSplit,
-      cumulativeSeconds: newCumulativeSeconds,
+      cumulativeSeconds: cumulativeTime,
       segmentSeconds: newSegmentSeconds,
       targetPace,
     }
