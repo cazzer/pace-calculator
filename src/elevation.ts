@@ -55,7 +55,7 @@ export const RACE_PROFILES: Record<string, RaceProfile> = {
     elevationProfile: LONDON_MARATHON_ELEVATION,
     logoUrl:
       'https://upload.wikimedia.org/wikipedia/en/2/26/TCS_London_Marathon_logo.png',
-    gpxUrl: '', // You can populate this with the Strava route or GPX file URL
+    gpxUrl: 'https://www.strava.com/routes/3340238562613360862',
   }, // 1981
   'berlin-marathon': {
     name: 'Berlin Marathon',
@@ -64,7 +64,7 @@ export const RACE_PROFILES: Record<string, RaceProfile> = {
     elevationProfile: BERLIN_MARATHON_ELEVATION,
     logoUrl:
       'https://upload.wikimedia.org/wikipedia/en/thumb/6/66/BMW_Berlin_Marathon_logo.svg/2560px-BMW_Berlin_Marathon_logo.svg.png',
-    gpxUrl: '', // You can populate this with the Strava route or GPX file URL
+    gpxUrl: 'https://www.strava.com/routes/3408692901540914278',
   }, // 1981 (same year as London, but started later in the year)
   'tokyo-marathon': {
     name: 'Tokyo Marathon',
@@ -73,7 +73,7 @@ export const RACE_PROFILES: Record<string, RaceProfile> = {
     elevationProfile: TOKYO_MARATHON_ELEVATION,
     logoUrl:
       'https://upload.wikimedia.org/wikipedia/en/thumb/9/9f/Tokyo_Marathon_logo.svg/1280px-Tokyo_Marathon_logo.svg.png',
-    gpxUrl: '', // You can populate this with the Strava route or GPX file URL
+    gpxUrl: 'https://www.strava.com/routes/3408692524761307238', // You can populate this with the Strava route or GPX file URL
   }, // 2007
   'sydney-marathon': {
     name: 'Sydney Marathon',

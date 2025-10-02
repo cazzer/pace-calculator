@@ -96,6 +96,15 @@ export function Splits({
           </div>
         )}
       </div>
+
+      {/* Add disclaimer for even-effort mode */}
+      {pacingStrategy === 'even-effort' && raceProfile && (
+        <div style={styles.disclaimer}>
+          <strong>Note:</strong> Even effort is based on estimated course
+          conditions. Always defer to official race pacers when available.
+        </div>
+      )}
+
       <style>{`
         @media (max-width: 768px) {
           .splits-table th, .splits-table td {
@@ -420,5 +429,15 @@ const styles: Record<string, React.CSSProperties> = {
     fontStyle: 'italic',
     lineHeight: 1.1,
     marginTop: 1,
+  },
+  disclaimer: {
+    backgroundColor: 'var(--bg-warning, #fff3cd)',
+    border: '1px solid var(--border-warning, #ffeaa7)',
+    borderRadius: '6px',
+    padding: '12px',
+    margin: '16px 0',
+    fontSize: '0.9rem',
+    lineHeight: '1.4',
+    color: 'var(--text-warning, #856404)',
   },
 }

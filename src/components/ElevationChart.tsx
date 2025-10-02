@@ -42,6 +42,39 @@ export const ElevationChart: React.FC<ElevationChartProps> = ({
     return null
   }
 
+  // Calculate dynamic Y-axis domain for more dramatic elevation visualization
+  const elevations = elevationProfile.map((point) => point.elevation)
+  const minElevation = Math.min(...elevations)
+  const maxElevation = Math.max(...elevations)
+
+  // Calculate elevation range and add appropriate padding
+  const elevationRange = maxElevation - minElevation
+
+  // Add padding - 10% of range or minimum 15ft, whichever is larger
+  const padding = Math.max(elevationRange * 0.1, 15)
+
+  // For very flat courses (< 30ft range), add minimum range to prevent over-zooming
+  const minDisplayRange = 30
+  if (elevationRange < minDisplayRange) {
+    const extraPadding = (minDisplayRange - elevationRange) / 2
+    const yAxisDomain = [
+      minElevation - padding - extraPadding,
+      maxElevation + padding + extraPadding,
+    ]
+  } else {
+    // Normal courses with good elevation variation
+    const yAxisDomain = [minElevation - padding, maxElevation + padding]
+  }
+
+  // Calculate the final domain
+  const yAxisDomain =
+    elevationRange < minDisplayRange
+      ? [
+          minElevation - padding - (minDisplayRange - elevationRange) / 2,
+          maxElevation + padding + (minDisplayRange - elevationRange) / 2,
+        ]
+      : [minElevation - padding, maxElevation + padding]
+
   // Prepare data for Recharts
   const chartData = elevationProfile.map((point, index) => {
     // Calculate grade at this point
@@ -131,7 +164,7 @@ export const ElevationChart: React.FC<ElevationChartProps> = ({
               }}
             />
             <YAxis
-              dataKey="elevation"
+              domain={yAxisDomain}
               axisLine={{ stroke: 'var(--text-secondary)' }}
               tickLine={{ stroke: 'var(--text-secondary)' }}
               tick={{
@@ -140,6 +173,7 @@ export const ElevationChart: React.FC<ElevationChartProps> = ({
                 fontFamily: 'inherit',
               }}
               width={50}
+              tickFormatter={(value) => Math.round(value).toString()}
               label={{
                 value: 'Elevation (ft)',
                 angle: -90,
@@ -211,7 +245,7 @@ export const ElevationChart: React.FC<ElevationChartProps> = ({
             rel="noopener noreferrer"
             style={styles.gpxLink}
           >
-            View Route Source Data →
+            View Route Data →
           </a>
         </div>
       )}
